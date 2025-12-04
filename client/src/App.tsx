@@ -1,35 +1,112 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "./const";
+import { NoteSidebar } from "./components/NoteSidebar";
 import Home from "./pages/Home";
+import NoteEditor from "./pages/NoteEditor";
+import Favorites from "./pages/Favorites";
+import FolderView from "./pages/FolderView";
+import PasswordGenerator from "./pages/PasswordGenerator";
+import Users from "./pages/Users";
+import { Button } from "./components/ui/button";
+import { LogOut, Loader2 } from "lucide-react";
+import { trpc } from "./lib/trpc";
+
+function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
+  const { user, loading, logout } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    window.location.href = getLoginUrl();
+    return null;
+  }
+
+  return (
+    <div className="flex h-screen bg-background">
+      <NoteSidebar />
+      <div className="flex-1 overflow-y-auto relative">
+        {/* User info in top right */}
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-3">
+          <div className="text-right">
+            <div className="text-sm font-semibold text-foreground">{user.name}</div>
+            <div className="text-xs text-muted-foreground">{user.role}</div>
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => logout()}
+            className="glow-golden"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
+      <Route path="/">
+        <AuthenticatedLayout>
+          <Home />
+        </AuthenticatedLayout>
+      </Route>
+      
+      <Route path="/note/:id">
+        <AuthenticatedLayout>
+          <NoteEditor />
+        </AuthenticatedLayout>
+      </Route>
+      
+      <Route path="/favorites">
+        <AuthenticatedLayout>
+          <Favorites />
+        </AuthenticatedLayout>
+      </Route>
+      
+      <Route path="/folder/:id">
+        <AuthenticatedLayout>
+          <FolderView />
+        </AuthenticatedLayout>
+      </Route>
+      
+      <Route path="/password-generator">
+        <AuthenticatedLayout>
+          <PasswordGenerator />
+        </AuthenticatedLayout>
+      </Route>
+      
+      <Route path="/users">
+        <AuthenticatedLayout>
+          <Users />
+        </AuthenticatedLayout>
+      </Route>
+      
+      <Route>
+        <Redirect to="/" />
+      </Route>
     </Switch>
   );
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
-
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
+      <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
           <Toaster />
           <Router />
