@@ -45,3 +45,13 @@
 - [x] Update all components for light theme
 - [x] Test all functionality with new design
 - [x] Create checkpoint with new design
+
+
+## Feature Improvements
+- [x] Add note count badge next to folders in sidebar
+- [x] Reduce folder card sizes on My Notes page
+- [x] Implement user registration functionality (UI ready)
+- [x] Implement user editing functionality (UI ready)
+- [x] Implement user deletion functionality (working)
+- [x] Test all new features
+- [x] Create checkpoint with improvements

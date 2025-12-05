@@ -27,10 +27,15 @@ export function NoteSidebar() {
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
 
   const { data: folders = [] } = trpc.folders.list.useQuery();
+  const { data: notes = [] } = trpc.notes.list.useQuery();
   const { data: suggestions = [] } = trpc.search.suggestions.useQuery(
     { query: searchQuery },
     { enabled: searchQuery.length > 0 }
   );
+
+  const getNotesCountInFolder = (folderId: number) => {
+    return notes.filter((note) => note.folderId === folderId).length;
+  };
 
   const createFolderMutation = trpc.folders.create.useMutation({
     onSuccess: () => {
@@ -151,17 +156,21 @@ export function NoteSidebar() {
               </Dialog>
             </div>
             <div className="space-y-1">
-              {folders.map((folder) => (
-                <Link key={folder.id} href={`/folder/${folder.id}`}>
-                  <Button
-                    variant={isActive(`/folder/${folder.id}`) ? "default" : "ghost"}
-                    className="w-full justify-start"
-                  >
-                    <Folder className="mr-2 h-4 w-4" />
-                    {folder.name}
-                  </Button>
-                </Link>
-              ))}
+              {folders.map((folder) => {
+                const notesCount = getNotesCountInFolder(folder.id);
+                return (
+                  <Link key={folder.id} href={`/folder/${folder.id}`}>
+                    <Button
+                      variant={isActive(`/folder/${folder.id}`) ? "default" : "ghost"}
+                      className="w-full justify-start"
+                    >
+                      <Folder className="mr-2 h-4 w-4" />
+                      <span className="flex-1 text-left">{folder.name}</span>
+                      <span className="text-xs text-muted-foreground ml-2">{notesCount}</span>
+                    </Button>
+                  </Link>
+                );
+              })}
             </div>
           </div>
 
