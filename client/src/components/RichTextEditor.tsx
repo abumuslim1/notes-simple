@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 
@@ -39,6 +39,17 @@ export function RichTextEditor({
   placeholder = "Напишите вашу заметку...",
 }: RichTextEditorProps) {
   const quillRef = useRef<ReactQuill>(null);
+
+  useEffect(() => {
+    // Apply custom styles to Quill editor
+    const editor = quillRef.current?.getEditor();
+    if (editor) {
+      const editorElement = editor.root;
+      editorElement.style.minHeight = "400px";
+      editorElement.style.fontSize = "16px";
+      editorElement.style.lineHeight = "1.6";
+    }
+  }, []);
 
   return (
     <div className="rich-text-editor">

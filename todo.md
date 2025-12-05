@@ -34,8 +34,3 @@
 - [x] Integrate rich text editor (Quill) for note content
 - [x] Complete Russian localization of all UI text
 - [x] Test all fixes and create new checkpoint
-
-## Bug Fix - Quill Editor
-- [x] Fix "Accessing non-instantiated editor" error in RichTextEditor component
-- [x] Test note creation and editing with fixed editor
-- [x] Create checkpoint with fix
