@@ -1,10 +1,8 @@
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
 import { Star, Lock, FileText, Folder as FolderIcon } from "lucide-react";
-import { toast } from "sonner";
 
 export default function Home() {
   const { data: notes = [], isLoading } = trpc.notes.list.useQuery();
@@ -49,12 +47,12 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
             {folders.map((folder) => (
               <Link key={folder.id} href={`/folder/${folder.id}`}>
-                <Card className="border border-gray-200 hover:shadow-md transition-all duration-300 cursor-pointer group p-3">
+                <div className="border border-gray-200 rounded-lg hover:shadow-md transition-all duration-300 cursor-pointer group p-3 bg-white">
                   <div className="flex items-center gap-2">
                     <FolderIcon className="h-5 w-5 flex-shrink-0" />
                     <span className="text-sm font-medium truncate">{folder.name}</span>
                   </div>
-                </Card>
+                </div>
               </Link>
             ))}
           </div>
@@ -81,7 +79,7 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
             {notes.map((note) => (
               <Link key={note.id} href={`/note/${note.id}/view`}>
-                <Card className="border border-gray-200 hover:shadow-md transition-all duration-300 cursor-pointer group h-full p-2">
+                <div className="border border-gray-200 rounded-lg hover:shadow-md transition-all duration-300 cursor-pointer group h-full p-2 bg-white">
                   <div className="flex items-start justify-between gap-1 mb-1">
                     <h3 className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2 flex-1">
                       {note.title}
@@ -112,7 +110,7 @@ export default function Home() {
                   <div className="mt-1 text-xs text-muted-foreground">
                     {new Date(note.updatedAt).toLocaleDateString()}
                   </div>
-                </Card>
+                </div>
               </Link>
             ))}
           </div>

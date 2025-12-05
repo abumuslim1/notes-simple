@@ -74,3 +74,10 @@
 - [x] Update frontend file upload component (already functional)
 - [x] Test file upload/download/delete operations
 - [x] Create checkpoint with file fixes
+
+
+## React Error #321 Fix
+- [x] Identify React #321 error source - Card component inside Link
+- [x] Fix Card component rendering issue in Home.tsx - replaced with div
+- [x] Test all pages for rendering errors - all tests pass
+- [x] Create checkpoint with error fix
