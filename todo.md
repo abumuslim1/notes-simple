@@ -34,3 +34,14 @@
 - [x] Integrate rich text editor (Quill) for note content
 - [x] Complete Russian localization of all UI text
 - [x] Test all fixes and create new checkpoint
+
+
+## Design Update - Light Minimalist Theme
+- [x] Integrate modern text editor (TipTap)
+- [x] Change theme from dark chiaroscuro to light minimalist
+- [x] Replace white background with light gray/white
+- [x] Remove gradients from headings
+- [x] Reduce element sizes and volumes
+- [x] Update all components for light theme
+- [x] Test all functionality with new design
+- [x] Create checkpoint with new design
