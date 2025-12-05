@@ -8,13 +8,16 @@ import { trpc } from "@/lib/trpc";
 
 export function Login() {
   const [, navigate] = useLocation();
+  const utils = trpc.useUtils();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Invalidate auth.me cache to refetch with new cookie
+      await utils.auth.me.invalidate();
       navigate("/");
     },
     onError: (err) => {
