@@ -39,6 +39,7 @@ export default function NoteEditor() {
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<File[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
   const { data: note } = trpc.notes.get.useQuery(
     { noteId: noteId! },
@@ -61,48 +62,49 @@ export default function NoteEditor() {
 
   const createNoteMutation = trpc.notes.create.useMutation({
     onSuccess: (data) => {
-      toast.success("Note created");
+      toast.success("Заметка создана");
       setLocation(`/note/${data.id}`);
     },
     onError: () => {
-      toast.error("Failed to create note");
+      toast.error("Ошибка при создании заметки");
     },
   });
 
   const updateNoteMutation = trpc.notes.update.useMutation({
     onSuccess: () => {
-      toast.success("Note saved");
+      toast.success("Заметка сохранена");
       trpc.useUtils().notes.get.invalidate({ noteId: noteId! });
       trpc.useUtils().notes.list.invalidate();
     },
     onError: () => {
-      toast.error("Failed to save note");
+      toast.error("Ошибка при сохранении заметки");
     },
   });
 
   const deleteNoteMutation = trpc.notes.delete.useMutation({
     onSuccess: () => {
-      toast.success("Note deleted");
+      toast.success("Заметка удалена");
       setLocation("/");
     },
     onError: () => {
-      toast.error("Failed to delete note");
+      toast.error("Ошибка при удалении заметки");
     },
   });
 
   const uploadFileMutation = trpc.files.upload.useMutation({
     onSuccess: () => {
-      toast.success("File uploaded");
+      toast.success("Файл загружен");
       trpc.useUtils().files.list.invalidate({ noteId: noteId! });
+      setPendingFiles([]);
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to upload file");
+      toast.error(error.message || "Ошибка при загрузке файла");
     },
   });
 
   const deleteFileMutation = trpc.files.delete.useMutation({
     onSuccess: () => {
-      toast.success("File deleted");
+      toast.success("Файл удален");
       trpc.useUtils().files.list.invalidate({ noteId: noteId! });
     },
   });
@@ -122,9 +124,9 @@ export default function NoteEditor() {
     }
   }, [noteTags]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title.trim()) {
-      toast.error("Title is required");
+      toast.error("Заголовок обязателен");
       return;
     }
 
@@ -139,12 +141,33 @@ export default function NoteEditor() {
     if (noteId) {
       updateNoteMutation.mutate({ noteId, ...data });
     } else {
-      createNoteMutation.mutate(data);
+      const newNote = await new Promise((resolve, reject) => {
+        createNoteMutation.mutate(data, {
+          onSuccess: (result) => resolve(result),
+          onError: reject,
+        });
+      });
+      if (newNote && pendingFiles.length > 0) {
+        const newNoteId = (newNote as any).id;
+        for (const file of pendingFiles) {
+          const reader = new FileReader();
+          reader.onload = async () => {
+            const base64 = (reader.result as string).split(",")[1];
+            uploadFileMutation.mutate({
+              noteId: newNoteId,
+              fileName: file.name,
+              fileData: base64,
+              mimeType: file.type,
+            });
+          };
+          reader.readAsDataURL(file);
+        }
+      }
     }
   };
 
   const handleDelete = () => {
-    if (noteId && confirm("Are you sure you want to delete this note?")) {
+    if (noteId && confirm("Вы уверены, что хотите удалить эту заметку?")) {
       deleteNoteMutation.mutate({ noteId });
     }
   };
@@ -161,54 +184,54 @@ export default function NoteEditor() {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!noteId) {
-      toast.error("Please save the note first before uploading files");
-      return;
-    }
-
     const files = Array.from(e.target.files || []);
     
     for (const file of files) {
       if (file.size > 50 * 1024 * 1024) {
-        toast.error(`${file.name} exceeds 50MB limit`);
+        toast.error(`${file.name} превышает лимит 50МБ`);
         continue;
       }
 
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = (reader.result as string).split(",")[1];
-        uploadFileMutation.mutate({
-          noteId: noteId!,
-          fileName: file.name,
-          fileData: base64,
-          mimeType: file.type,
-        });
-      };
-      reader.readAsDataURL(file);
+      if (noteId) {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          const base64 = (reader.result as string).split(",")[1];
+          uploadFileMutation.mutate({
+            noteId: noteId!,
+            fileName: file.name,
+            fileData: base64,
+            mimeType: file.type,
+          });
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setPendingFiles([...pendingFiles, file]);
+        toast.success(`${file.name} добавлен, будет загружен после сохранения`);
+      }
     }
   };
 
   return (
     <div className="h-screen flex flex-col">
       {/* Header */}
-      <div className="border-b border-border bg-card p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      <div className="border-b border-border bg-card p-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <Link href="/">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
-            <h1 className="text-2xl font-bold text-gradient-light heading">
-              {noteId ? "РЕДАКТИРОВАТЬ ЗАМЕТКУ" : "НОВАЯ ЗАМЕТКА"}
+            <h1 className="text-lg font-bold text-gradient-light heading truncate">
+              {noteId ? "РЕДАКТИРОВАТЬ" : "НОВАЯ ЗАМЕТКА"}
             </h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 flex-shrink-0">
             {noteId && (
               <>
                 <Dialog open={isVersionHistoryOpen} onOpenChange={setIsVersionHistoryOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="outline" size="icon">
+                    <Button variant="outline" size="icon" className="h-8 w-8">
                       <History className="h-4 w-4" />
                     </Button>
                   </DialogTrigger>
@@ -216,14 +239,14 @@ export default function NoteEditor() {
                     <DialogHeader>
                       <DialogTitle className="heading">ИСТОРИЯ ВЕРСИЙ</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
                       {versions.map((version) => (
-                        <Card key={version.id} className="p-4 card-cinematic">
-                          <div className="text-xs text-muted-foreground mb-2">
+                        <Card key={version.id} className="p-2 card-cinematic">
+                          <div className="text-xs text-muted-foreground mb-1">
                             {new Date(version.createdAt).toLocaleString()}
                           </div>
-                          <h3 className="font-semibold mb-2 heading">{version.title}</h3>
-                          <p className="text-sm text-muted-foreground line-clamp-3">
+                          <h3 className="text-sm font-semibold mb-1 heading">{version.title}</h3>
+                          <p className="text-xs text-muted-foreground line-clamp-2">
                             {version.content}
                           </p>
                         </Card>
@@ -231,13 +254,13 @@ export default function NoteEditor() {
                     </div>
                   </DialogContent>
                 </Dialog>
-                <Button variant="outline" size="icon" onClick={handleDelete}>
+                <Button variant="outline" size="icon" onClick={handleDelete} className="h-8 w-8">
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </>
             )}
-            <Button onClick={handleSave} className="glow-golden">
-              <Save className="mr-2 h-4 w-4" />
+            <Button onClick={handleSave} className="glow-golden h-8 px-3 text-sm">
+              <Save className="mr-1 h-3 w-3" />
               Сохранить
             </Button>
           </div>
@@ -245,82 +268,85 @@ export default function NoteEditor() {
       </div>
 
       {/* Editor */}
-      <div className="flex-1 overflow-y-auto p-8">
-        <div className="max-w-4xl mx-auto space-y-6">
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="max-w-4xl mx-auto space-y-3">
           {/* Title */}
           <div>
-            <Label htmlFor="title" className="text-lg heading">
+            <Label htmlFor="title" className="text-xs font-semibold heading">
               ЗАГОЛОВОК
             </Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Введите заголовок заметки..."
-              className="text-2xl font-semibold border-0 border-b border-border rounded-none px-0 focus-visible:ring-0 bg-transparent"
+              placeholder="Введите заголовок..."
+              className="text-lg font-semibold border-0 border-b border-border rounded-none px-0 py-1 focus-visible:ring-0 bg-transparent"
             />
           </div>
 
-          {/* Folder Selection */}
-          <div>
-            <Label htmlFor="folder" className="heading">
-              ПАПКА
-            </Label>
-            <Select
-              value={folderId?.toString() || "none"}
-              onValueChange={(value) => setFolderId(value === "none" ? undefined : Number(value))}
-            >
-              <SelectTrigger id="folder" className="bg-card">
-                <SelectValue placeholder="Без папки" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Без папки</SelectItem>
-                {folders.map((folder) => (
-                  <SelectItem key={folder.id} value={folder.id.toString()}>
-                    {folder.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Folder & Password Row */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Folder Selection */}
+            <div>
+              <Label htmlFor="folder" className="text-xs font-semibold heading">
+                ПАПКА
+              </Label>
+              <Select
+                value={folderId?.toString() || "none"}
+                onValueChange={(value) => setFolderId(value === "none" ? undefined : Number(value))}
+              >
+                <SelectTrigger id="folder" className="bg-card h-8 text-sm">
+                  <SelectValue placeholder="Без папки" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Без папки</SelectItem>
+                  {folders.map((folder) => (
+                    <SelectItem key={folder.id} value={folder.id.toString()}>
+                      {folder.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* Password Protection */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <Label className="heading">ЗАЩИТА ПАРОЛЕМ</Label>
+            {/* Password Protection */}
+            <div>
+              <Label className="text-xs font-semibold heading">ЗАЩИТА</Label>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setHasPassword(!hasPassword)}
+                className="w-full h-8 text-xs justify-start"
               >
                 {hasPassword ? (
                   <>
-                    <Lock className="mr-2 h-4 w-4" />
+                    <Lock className="mr-1 h-3 w-3" />
                     Защищено
                   </>
                 ) : (
                   <>
-                    <Unlock className="mr-2 h-4 w-4" />
-                    Not Защищено
+                    <Unlock className="mr-1 h-3 w-3" />
+                    Открыто
                   </>
                 )}
               </Button>
             </div>
-            {hasPassword && (
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Введите пароль..."
-                className="bg-card"
-              />
-            )}
           </div>
+
+          {hasPassword && (
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Пароль..."
+              className="bg-card h-8 text-sm"
+            />
+          )}
 
           {/* Tags */}
           <div>
-            <Label className="heading">ТЕГИ</Label>
-            <div className="flex gap-2 mb-2">
+            <Label className="text-xs font-semibold heading">ТЕГИ</Label>
+            <div className="flex gap-1 mb-1">
               <Input
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
@@ -330,86 +356,104 @@ export default function NoteEditor() {
                     handleAddTag();
                   }
                 }}
-                placeholder="Добавить тег..."
-                className="bg-card"
+                placeholder="Тег..."
+                className="bg-card h-8 text-sm"
               />
-              <Button onClick={handleAddTag} variant="outline">
-                <Tag className="h-4 w-4" />
+              <Button onClick={handleAddTag} variant="outline" size="sm" className="h-8 w-8 p-0">
+                <Tag className="h-3 w-3" />
               </Button>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="gap-1">
-                  {tag}
-                  <X
-                    className="h-3 w-3 cursor-pointer"
-                    onClick={() => handleRemoveTag(tag)}
-                  />
-                </Badge>
-              ))}
-            </div>
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {tags.map((tag) => (
+                  <Badge key={tag} variant="secondary" className="gap-0.5 text-xs">
+                    {tag}
+                    <X
+                      className="h-2 w-2 cursor-pointer"
+                      onClick={() => handleRemoveTag(tag)}
+                    />
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Content */}
           <div>
-            <Label htmlFor="content" className="heading">
+            <Label htmlFor="content" className="text-xs font-semibold heading">
               СОДЕРЖАНИЕ
             </Label>
-            <RichTextEditor
-              value={content}
-              onChange={setContent}
-              placeholder="Напишите вашу заметку..."
-            />
+            <div className="border border-border rounded-md overflow-hidden">
+              <RichTextEditor
+                value={content}
+                onChange={setContent}
+                placeholder="Напишите вашу заметку..."
+              />
+            </div>
           </div>
 
           {/* File Attachments */}
-          {noteId && (
-            <div>
-              <Label className="heading">ВЛОЖЕНИЯ</Label>
-              <div className="space-y-2">
-                <Input
-                  type="file"
-                  multiple
-                  onChange={handleFileUpload}
-                  className="bg-card"
-                />
-                <div className="text-xs text-muted-foreground">
-                  Максимальный размер файла: 50МБ
-                </div>
-                {noteFiles.length > 0 && (
-                  <div className="space-y-2 mt-4">
-                    {noteFiles.map((file) => (
-                      <Card key={file.id} className="p-3 flex items-center justify-between card-cinematic">
-                        <div className="flex items-center gap-3">
-                          <FileText className="h-5 w-5 text-primary" />
-                          <div>
-                            <a
-                              href={file.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sm font-medium hover:text-primary"
-                            >
-                              {file.fileName}
-                            </a>
-                            <div className="text-xs text-muted-foreground">
-                              {(file.fileSize / 1024 / 1024).toFixed(2)} MB
-                            </div>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteFileMutation.mutate({ fileId: file.id })}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </Card>
-                    ))}
-                  </div>
-                )}
+          <div>
+            <Label className="text-xs font-semibold heading">ВЛОЖЕНИЯ</Label>
+            <div className="space-y-1">
+              <Input
+                type="file"
+                multiple
+                onChange={handleFileUpload}
+                className="bg-card h-8 text-xs"
+              />
+              <div className="text-xs text-muted-foreground">
+                Макс. 50МБ {!noteId && pendingFiles.length > 0 && `(${pendingFiles.length} файлов ждут сохранения)`}
               </div>
+              
+              {/* Pending Files */}
+              {pendingFiles.length > 0 && (
+                <div className="space-y-1 mt-2">
+                  <div className="text-xs font-semibold text-amber-600">Ожидают загрузки:</div>
+                  {pendingFiles.map((file, idx) => (
+                    <div key={idx} className="flex items-center justify-between bg-amber-50 p-1 rounded text-xs">
+                      <span className="truncate">{file.name}</span>
+                      <button
+                        onClick={() => setPendingFiles(pendingFiles.filter((_, i) => i !== idx))}
+                        className="text-amber-600 hover:text-amber-800"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Uploaded Files */}
+              {noteFiles.length > 0 && (
+                <div className="space-y-1 mt-2">
+                  {noteFiles.map((file) => (
+                    <div key={file.id} className="flex items-center justify-between bg-gray-50 p-1 rounded text-xs">
+                      <a
+                        href={file.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline truncate"
+                      >
+                        {file.fileName}
+                      </a>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <span className="text-muted-foreground">
+                          {(file.fileSize / 1024 / 1024).toFixed(1)}MB
+                        </span>
+                        <button
+                          onClick={() => deleteFileMutation.mutate({ fileId: file.id })}
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

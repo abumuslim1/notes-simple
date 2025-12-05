@@ -81,3 +81,13 @@
 - [x] Fix Card component rendering issue in Home.tsx - replaced with div
 - [x] Test all pages for rendering errors - all tests pass
 - [x] Create checkpoint with error fix
+
+
+## Editor UI Improvements
+- [x] Fix file upload functionality for new notes (not just edits) - добавлена очередь файлов
+- [x] Reduce padding and margins in NoteEditor - p-8 -> p-4, gap-6 -> gap-3
+- [x] Compact file upload section - компактный список файлов
+- [x] Reduce spacing between form fields - уменьшены отступы между элементами
+- [x] Optimize overall layout for compact view - оптимизирован весь интерфейс
+- [x] Test file uploads on both new and existing notes - все тесты пройдены
+- [x] Create checkpoint with improvements
