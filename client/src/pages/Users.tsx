@@ -1,269 +1,178 @@
 import { useState } from "react";
-import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Users as UsersIcon, Shield, User, Trash2, Plus, Edit2 } from "lucide-react";
-import { toast } from "sonner";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { AlertCircle, Trash2, Shield, User } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 export default function Users() {
-  const { user: currentUser } = useAuth();
-  const { data: users = [], isLoading } = trpc.users.list.useQuery();
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<typeof users[0] | null>(null);
-  const [newUserName, setNewUserName] = useState("");
-  const [newUserEmail, setNewUserEmail] = useState("");
-  const [newUserRole, setNewUserRole] = useState<"user" | "admin">("user");
+  const { user } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const usersQuery = trpc.users.list.useQuery(undefined, {
+    enabled: user?.role === "admin",
+  });
 
   const updateRoleMutation = trpc.users.updateRole.useMutation({
     onSuccess: () => {
-      toast.success("Роль пользователя обновлена");
-      trpc.useUtils().users.list.invalidate();
+      setSuccess("User role updated successfully");
+      usersQuery.refetch();
+      setTimeout(() => setSuccess(""), 3000);
     },
-    onError: () => {
-      toast.error("Не удалось обновить роль");
+    onError: (err) => {
+      setError(err.message || "Failed to update user role");
     },
   });
 
-  const deleteUserMutation = trpc.users.delete.useMutation({
+  const deleteMutation = trpc.users.delete.useMutation({
     onSuccess: () => {
-      toast.success("Пользователь удалён");
-      trpc.useUtils().users.list.invalidate();
+      setSuccess("User deleted successfully");
+      usersQuery.refetch();
+      setTimeout(() => setSuccess(""), 3000);
     },
-    onError: () => {
-      toast.error("Не удалось удалить пользователя");
+    onError: (err) => {
+      setError(err.message || "Failed to delete user");
     },
   });
 
-  const handleRoleChange = (userId: number, role: "user" | "admin") => {
-    updateRoleMutation.mutate({ userId, role });
-  };
-
-  const handleDeleteUser = (userId: number, userName: string | null) => {
-    if (confirm(`Вы уверены, что хотите удалить пользователя ${userName || "Неизвестный"}?`)) {
-      deleteUserMutation.mutate({ userId });
-    }
-  };
-
-  const handleCreateUser = () => {
-    if (!newUserName.trim() || !newUserEmail.trim()) {
-      toast.error("Заполните все поля");
-      return;
-    }
-    // TODO: Implement user creation API
-    toast.info("Функция регистрации будет добавлена");
-    setIsCreateOpen(false);
-    setNewUserName("");
-    setNewUserEmail("");
-    setNewUserRole("user");
-  };
-
-  const handleEditUser = (user: typeof users[0]) => {
-    setEditingUser(user);
-    setNewUserName(user.name || "");
-    setNewUserEmail(user.email || "");
-    setNewUserRole(user.role);
-    setIsEditOpen(true);
-  };
-
-  const handleUpdateUser = () => {
-    if (!editingUser) return;
-    if (!newUserName.trim() || !newUserEmail.trim()) {
-      toast.error("Заполните все поля");
-      return;
-    }
-    // TODO: Implement user update API
-    toast.info("Функция редактирования будет добавлена");
-    setIsEditOpen(false);
-    setEditingUser(null);
-  };
-
-  if (isLoading) {
+  if (user?.role !== "admin") {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-muted-foreground">Загрузка пользователей...</div>
+      <div className="flex-1 p-8">
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 text-red-700">
+              <AlertCircle className="w-5 h-5" />
+              <span>You don't have permission to access this page</span>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
+  const filteredUsers = usersQuery.data?.filter(
+    (u) =>
+      u.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.name.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
+
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-semibold heading">
-              Управление пользователями
-            </h1>
-            <p className="text-muted-foreground text-sm">
-              Управляйте ролями и правами пользователей
-            </p>
-          </div>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Добавить пользователя
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-card text-card-foreground">
-              <DialogHeader>
-                <DialogTitle className="heading">Добавить пользователя</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="createName">Имя</Label>
-                  <Input
-                    id="createName"
-                    value={newUserName}
-                    onChange={(e) => setNewUserName(e.target.value)}
-                    placeholder="Введите имя пользователя"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="createEmail">Email</Label>
-                  <Input
-                    id="createEmail"
-                    value={newUserEmail}
-                    onChange={(e) => setNewUserEmail(e.target.value)}
-                    placeholder="Введите email"
-                    type="email"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="createRole">Роль</Label>
-                  <Select value={newUserRole} onValueChange={(value) => setNewUserRole(value as "user" | "admin")}>
-                    <SelectTrigger id="createRole">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="user">Пользователь</SelectItem>
-                      <SelectItem value="admin">Администратор</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={handleCreateUser} className="w-full">
-                  Добавить
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+    <div className="flex-1 p-8 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">User Management</h1>
+        <p className="text-muted-foreground mt-1">Manage users and their roles</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 max-w-4xl">
-        {users.map((user) => (
-          <Card key={user.id} className="border border-gray-200">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                    {user.role === "admin" ? (
-                      <Shield className="h-5 w-5 text-primary" />
-                    ) : (
-                      <User className="h-5 w-5 text-muted-foreground" />
+      {error && (
+        <div className="flex items-center gap-2 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
+          <AlertCircle className="w-5 h-5" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {success && (
+        <div className="flex items-center gap-2 p-4 bg-green-50 text-green-700 rounded-lg border border-green-200">
+          <span>{success}</span>
+        </div>
+      )}
+
+      <div className="flex gap-4">
+        <Input
+          placeholder="Search by username or name..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="max-w-md"
+        />
+      </div>
+
+      {usersQuery.isLoading ? (
+        <div className="text-center py-8 text-muted-foreground">Loading users...</div>
+      ) : filteredUsers.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">No users found</div>
+      ) : (
+        <div className="grid gap-4">
+          {filteredUsers.map((u) => (
+            <Card key={u.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold">
+                      {u.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold">{u.name}</div>
+                      <div className="text-sm text-muted-foreground">@{u.username}</div>
+                    </div>
+                    <Badge variant={u.role === "admin" ? "default" : "secondary"}>
+                      {u.role === "admin" ? (
+                        <>
+                          <Shield className="w-3 h-3 mr-1" />
+                          Admin
+                        </>
+                      ) : (
+                        <>
+                          <User className="w-3 h-3 mr-1" />
+                          User
+                        </>
+                      )}
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {u.role === "user" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setError("");
+                          updateRoleMutation.mutate({ userId: u.id, role: "admin" });
+                        }}
+                        disabled={updateRoleMutation.isPending}
+                      >
+                        Make Admin
+                      </Button>
+                    )}
+
+                    {u.role === "admin" && u.id !== user?.id && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setError("");
+                          updateRoleMutation.mutate({ userId: u.id, role: "user" });
+                        }}
+                        disabled={updateRoleMutation.isPending}
+                      >
+                        Remove Admin
+                      </Button>
+                    )}
+
+                    {u.id !== user?.id && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          if (confirm(`Are you sure you want to delete ${u.name}?`)) {
+                            setError("");
+                            deleteMutation.mutate({ userId: u.id });
+                          }
+                        }}
+                        disabled={deleteMutation.isPending}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     )}
                   </div>
-                  <div className="min-w-0">
-                    <h3 className="font-semibold text-sm">
-                      {user.name || "Неизвестный пользователь"}
-                    </h3>
-                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant={user.role === "admin" ? "default" : "secondary"} className="text-xs">
-                        {user.role === "admin" ? "Администратор" : "Пользователь"}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(user.lastSignedIn).toLocaleDateString('ru-RU')}
-                      </span>
-                    </div>
-                  </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleEditUser(user)}
-                    disabled={user.id === currentUser?.id}
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => handleDeleteUser(user.id, user.name)}
-                    disabled={user.id === currentUser?.id || deleteUserMutation.isPending}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Edit User Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="bg-card text-card-foreground">
-          <DialogHeader>
-            <DialogTitle className="heading">Редактировать пользователя</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="editName">Имя</Label>
-              <Input
-                id="editName"
-                value={newUserName}
-                onChange={(e) => setNewUserName(e.target.value)}
-                placeholder="Введите имя пользователя"
-              />
-            </div>
-            <div>
-              <Label htmlFor="editEmail">Email</Label>
-              <Input
-                id="editEmail"
-                value={newUserEmail}
-                onChange={(e) => setNewUserEmail(e.target.value)}
-                placeholder="Введите email"
-                type="email"
-              />
-            </div>
-            <div>
-              <Label htmlFor="editRole">Роль</Label>
-              <Select value={newUserRole} onValueChange={(value) => setNewUserRole(value as "user" | "admin")}>
-                <SelectTrigger id="editRole">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="user">Пользователь</SelectItem>
-                  <SelectItem value="admin">Администратор</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button onClick={handleUpdateUser} className="w-full">
-              Сохранить
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

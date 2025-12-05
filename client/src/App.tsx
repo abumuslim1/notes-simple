@@ -1,6 +1,6 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Route, Switch, Redirect } from "wouter";
+import { Route, Switch, Redirect, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -15,11 +15,14 @@ import FolderView from "./pages/FolderView";
 import PasswordGenerator from "./pages/PasswordGenerator";
 import Users from "./pages/Users";
 import License from "./pages/License";
+import { Login } from "./pages/Login";
+import { Register } from "./pages/Register";
 import { Button } from "./components/ui/button";
 import { LogOut, Loader2 } from "lucide-react";
 import { trpc } from "./lib/trpc";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
+  const [, navigate] = useLocation();
   const { user, loading, logout } = useAuth();
 
   if (loading) {
@@ -31,7 +34,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    window.location.href = getLoginUrl();
+    navigate("/login");
     return null;
   }
 
@@ -66,6 +69,14 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 function Router() {
   return (
     <Switch>
+      <Route path="/login">
+        <Login />
+      </Route>
+      
+      <Route path="/register">
+        <Register />
+      </Route>
+      
       <Route path="/license">
         <AuthenticatedLayout>
           <License />

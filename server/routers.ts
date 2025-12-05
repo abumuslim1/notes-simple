@@ -1,5 +1,4 @@
 import { COOKIE_NAME } from "@shared/const";
-import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
@@ -23,13 +22,60 @@ export const appRouter = router({
   license: licenseRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
+    
     logout: publicProcedure.mutation(({ ctx }) => {
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return {
-        success: true,
-      } as const;
+      ctx.res.clearCookie(COOKIE_NAME, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+      });
+      return { success: true };
     }),
+    
+    register: publicProcedure
+      .input(z.object({
+        username: z.string().min(3).max(64),
+        password: z.string().min(6),
+        name: z.string().min(1).max(255),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const existingUser = await db.getUserByUsername(input.username);
+        if (existingUser) {
+          throw new TRPCError({ code: "CONFLICT", message: "Username already exists" });
+        }
+        
+        const passwordHash = await hashPassword(input.password);
+        const userId = await db.createUser(input.username, passwordHash, input.name);
+        const user = await db.getUserById(userId);
+        
+        if (!user) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create user" });
+        }
+        
+        return { id: user.id, username: user.username, name: user.name };
+      }),
+    
+    login: publicProcedure
+      .input(z.object({
+        username: z.string(),
+        password: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await db.getUserByUsername(input.username);
+        if (!user) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid credentials" });
+        }
+        
+        const isPasswordValid = await verifyPassword(input.password, user.passwordHash);
+        if (!isPasswordValid) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid credentials" });
+        }
+        
+        await db.updateUserLastSignedIn(user.id);
+        
+        return { id: user.id, username: user.username, name: user.name, role: user.role };
+      }),
   }),
 
   // User management (admin only)
@@ -37,6 +83,21 @@ export const appRouter = router({
     list: adminProcedure.query(async () => {
       return db.getAllUsers();
     }),
+    
+    update: adminProcedure
+      .input(z.object({
+        userId: z.number(),
+        name: z.string().optional(),
+        email: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const updateData: any = {};
+        if (input.name !== undefined) updateData.name = input.name;
+        if (input.email !== undefined) updateData.email = input.email;
+        
+        await db.updateUser(input.userId, updateData);
+        return { success: true };
+      }),
     
     updateRole: adminProcedure
       .input(z.object({
@@ -306,5 +367,3 @@ export const appRouter = router({
 });
 
 export type AppRouter = typeof appRouter;
-
-
