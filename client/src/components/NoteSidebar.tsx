@@ -59,7 +59,7 @@ export function NoteSidebar() {
   const isActive = (path: string) => location === path;
 
   return (
-    <div className="fixed left-0 top-0 w-64 h-screen bg-sidebar border-r border-sidebar-border flex flex-col z-40">
+    <div className="w-64 h-screen bg-sidebar border-r border-sidebar-border flex flex-col">
       {/* Header */}
       <div className="p-6 border-b border-sidebar-border">
         <Link href="/">

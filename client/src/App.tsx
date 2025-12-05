@@ -38,7 +38,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen bg-background">
       <NoteSidebar />
-      <div className="flex-1 flex flex-col ml-64">
+      <div className="flex-1 flex flex-col">
         <TrialBanner />
         <div className="flex-1 overflow-y-auto relative">
           {/* User info in top right */}
