@@ -1,5 +1,5 @@
 import type { Request } from "express";
-import * as jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import * as db from "../db";
 import { ENV } from "./env";
 
