@@ -5,6 +5,7 @@ import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
+import { hashPassword, verifyPassword } from "./_core/password";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
 
@@ -95,10 +96,10 @@ export const appRouter = router({
     
     get: protectedProcedure
       .input(z.object({ noteId: z.number() }))
-      .query(async ({ input }) => {
+      .query(async ({ ctx, input }) => {
         const note = await db.getNoteById(input.noteId);
-        if (!note) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Note not found' });
+        if (!note || note.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Note not found" });
         }
         return note;
       }),
@@ -209,10 +210,14 @@ export const appRouter = router({
         noteId: z.number(),
         password: z.string(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
         const note = await db.getNoteById(input.noteId);
-        if (!note || !note.passwordHash) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid note or password' });
+        if (!note || note.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Note not found" });
+        }
+        
+        if (!note.passwordHash) {
+          return { valid: true };
         }
         
         const isValid = await verifyPassword(input.password, note.passwordHash);
@@ -300,14 +305,4 @@ export const appRouter = router({
 
 export type AppRouter = typeof appRouter;
 
-// Helper functions for password hashing
-async function hashPassword(password: string): Promise<string> {
-  // Simple hash using built-in crypto (for production, use bcrypt)
-  const crypto = await import('crypto');
-  return crypto.createHash('sha256').update(password).digest('hex');
-}
 
-async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  const hashedInput = await hashPassword(password);
-  return hashedInput === hash;
-}

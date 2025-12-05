@@ -27,3 +27,10 @@
 - [x] Write vitest tests for critical API endpoints
 - [x] Test all user flows
 - [x] Create checkpoint for deployment
+
+## Bug Fixes & Improvements
+- [x] Fix password protection bug - add password verification dialog before opening protected notes
+- [x] Fix file attachment functionality - ensure files can be uploaded and displayed
+- [x] Integrate rich text editor (Quill) for note content
+- [x] Complete Russian localization of all UI text
+- [x] Test all fixes and create new checkpoint

@@ -19,21 +19,21 @@ export default function Users() {
 
   const updateRoleMutation = trpc.users.updateRole.useMutation({
     onSuccess: () => {
-      toast.success("User role updated");
+      toast.success("Роль пользователя обновлена");
       trpc.useUtils().users.list.invalidate();
     },
     onError: () => {
-      toast.error("Failed to update user role");
+      toast.error("Не удалось обновить роль");
     },
   });
 
   const deleteUserMutation = trpc.users.delete.useMutation({
     onSuccess: () => {
-      toast.success("User deleted");
+      toast.success("Пользователь удалён");
       trpc.useUtils().users.list.invalidate();
     },
     onError: () => {
-      toast.error("Failed to delete user");
+      toast.error("Не удалось удалить пользователя");
     },
   });
 
@@ -42,7 +42,7 @@ export default function Users() {
   };
 
   const handleDeleteUser = (userId: number, userName: string | null) => {
-    if (confirm(`Are you sure you want to delete user ${userName || "Unknown"}?`)) {
+    if (confirm(`Вы уверены, что хотите удалить пользователя ${userName || "Неизвестный"}?`)) {
       deleteUserMutation.mutate({ userId });
     }
   };
@@ -50,7 +50,7 @@ export default function Users() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-muted-foreground">Loading users...</div>
+        <div className="text-muted-foreground">Загрузка пользователей...</div>
       </div>
     );
   }
@@ -60,10 +60,10 @@ export default function Users() {
       <div className="mb-12 relative">
         <div className="absolute top-0 right-0 w-96 h-96 light-ray opacity-20 pointer-events-none" />
         <h1 className="text-6xl font-bold text-gradient-light mb-4 heading">
-          USER MANAGEMENT
+          УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ
         </h1>
         <p className="text-muted-foreground text-lg">
-          Manage user roles and permissions
+          Управляйте ролями и правами пользователей
         </p>
       </div>
 
@@ -82,7 +82,7 @@ export default function Users() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-lg heading">
-                      {user.name || "Unknown User"}
+                      {user.name || "Неизвестный пользователь"}
                     </h3>
                     <p className="text-sm text-muted-foreground">{user.email}</p>
                     <div className="flex items-center gap-2 mt-1">
@@ -90,7 +90,7 @@ export default function Users() {
                         {user.role}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        Last signed in: {new Date(user.lastSignedIn).toLocaleDateString()}
+                        Последний вход: {new Date(user.lastSignedIn).toLocaleDateString('ru-RU')}
                       </span>
                     </div>
                   </div>
@@ -107,8 +107,8 @@ export default function Users() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="user">Пользователь</SelectItem>
+                      <SelectItem value="admin">Администратор</SelectItem>
                     </SelectContent>
                   </Select>
                   <Button

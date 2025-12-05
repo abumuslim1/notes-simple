@@ -24,7 +24,7 @@ export default function PasswordGenerator() {
     if (includeSymbols) charset += "!@#$%^&*()_+-=[]{}|;:,.<>?";
 
     if (charset === "") {
-      toast.error("Please select at least one character type");
+      toast.error("Выберите хотя бы один тип символов");
       return "";
     }
 
@@ -45,7 +45,7 @@ export default function PasswordGenerator() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success("Password copied to clipboard");
+    toast.success("Пароль скопирован в буфер обмена");
   };
 
   return (
@@ -54,10 +54,10 @@ export default function PasswordGenerator() {
       <div className="mb-12 relative">
         <div className="absolute top-0 right-0 w-96 h-96 light-ray opacity-20 pointer-events-none" />
         <h1 className="text-6xl font-bold text-gradient-light mb-4 heading">
-          PASSWORD GENERATOR
+          ГЕНЕРАТОР ПАРОЛЕЙ
         </h1>
         <p className="text-muted-foreground text-lg">
-          Create secure passwords with customizable settings
+          Создавайте надёжные пароли с настраиваемыми параметрами
         </p>
       </div>
 
@@ -67,14 +67,14 @@ export default function PasswordGenerator() {
           <CardHeader>
             <CardTitle className="flex items-center gap-3 heading text-2xl">
               <Key className="h-6 w-6 text-primary" />
-              SETTINGS
+              НАСТРОЙКИ
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Length */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <Label className="heading">LENGTH</Label>
+                <Label className="heading">ДЛИНА</Label>
                 <span className="text-2xl font-bold text-primary">{length}</span>
               </div>
               <Slider
@@ -93,7 +93,7 @@ export default function PasswordGenerator() {
 
             {/* Character Types */}
             <div className="space-y-4">
-              <Label className="heading">CHARACTER TYPES</Label>
+              <Label className="heading">ТИПЫ СИМВОЛОВ</Label>
               
               <div className="flex items-center space-x-2">
                 <Checkbox
@@ -105,7 +105,7 @@ export default function PasswordGenerator() {
                   htmlFor="uppercase"
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                  Uppercase (A-Z)
+                  Прописные (A-Z)
                 </label>
               </div>
 
@@ -119,7 +119,7 @@ export default function PasswordGenerator() {
                   htmlFor="lowercase"
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                  Lowercase (a-z)
+                  Строчные (a-z)
                 </label>
               </div>
 
@@ -133,7 +133,7 @@ export default function PasswordGenerator() {
                   htmlFor="numbers"
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                  Numbers (0-9)
+                  Цифры (0-9)
                 </label>
               </div>
 
@@ -147,7 +147,7 @@ export default function PasswordGenerator() {
                   htmlFor="symbols"
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                  Symbols (!@#$%^&*)
+                  Символы (!@#$%^&*)
                 </label>
               </div>
             </div>
@@ -160,7 +160,7 @@ export default function PasswordGenerator() {
                 size="lg"
               >
                 <RefreshCw className="mr-2 h-5 w-5" />
-                Generate Password
+                Сгенерировать пароль
               </Button>
               <Button
                 onClick={() => handleGenerate(5)}
@@ -168,7 +168,7 @@ export default function PasswordGenerator() {
                 className="w-full"
                 size="lg"
               >
-                Generate 5 Variations
+                Сгенерировать 5 вариантов
               </Button>
             </div>
           </CardContent>
@@ -177,14 +177,14 @@ export default function PasswordGenerator() {
         {/* Generated Passwords */}
         <Card className="card-cinematic border-cinematic">
           <CardHeader>
-            <CardTitle className="heading text-2xl">GENERATED PASSWORDS</CardTitle>
+            <CardTitle className="heading text-2xl">СГЕНЕРИРОВАННЫЕ ПАРОЛИ</CardTitle>
           </CardHeader>
           <CardContent>
             {generatedPasswords.length === 0 ? (
               <div className="text-center py-12">
                 <Key className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground">
-                  Click generate to create passwords
+                  Нажмите генерировать, чтобы создать пароли
                 </p>
               </div>
             ) : (

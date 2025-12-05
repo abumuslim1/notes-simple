@@ -31,10 +31,10 @@ export default function Favorites() {
       <div className="mb-12 relative">
         <div className="absolute top-0 right-0 w-96 h-96 light-ray opacity-20 pointer-events-none" />
         <h1 className="text-6xl font-bold text-gradient-light mb-4 heading">
-          FAVORITES
+          ИЗБРАННОЕ
         </h1>
         <p className="text-muted-foreground text-lg">
-          Your starred notes for quick access
+          Ваши избранные заметки для быстрого доступа
         </p>
       </div>
 
@@ -42,16 +42,16 @@ export default function Favorites() {
         <Card className="card-cinematic border-cinematic p-12 text-center">
           <Star className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
           <h3 className="text-xl font-semibold text-foreground mb-2 heading">
-            NO FAVORITES YET
+            ПОКА НЕТ ИЗБРАННЫХ
           </h3>
           <p className="text-muted-foreground">
-            Star notes to add them to your favorites
+            Отметьте заметки звездочкой, чтобы добавить их в избранное
           </p>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {notes.map((note) => (
-            <Link key={note.id} href={`/note/${note.id}`}>
+            <Link key={note.id} href={`/note/${note.id}/view`}>
               <Card className="card-cinematic border-cinematic hover:glow-golden transition-all duration-300 cursor-pointer group h-full">
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2">

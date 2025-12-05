@@ -34,13 +34,13 @@ export function NoteSidebar() {
 
   const createFolderMutation = trpc.folders.create.useMutation({
     onSuccess: () => {
-      toast.success("Folder created");
+      toast.success("Папка создана");
       setNewFolderName("");
       setIsCreateFolderOpen(false);
       trpc.useUtils().folders.list.invalidate();
     },
     onError: () => {
-      toast.error("Failed to create folder");
+      toast.error("Не удалось создать папку");
     },
   });
 
@@ -68,7 +68,7 @@ export function NoteSidebar() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search notes..."
+            placeholder="Поиск заметок..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 bg-sidebar-accent border-sidebar-border"
@@ -100,7 +100,7 @@ export function NoteSidebar() {
                 className="w-full justify-start"
               >
                 <Home className="mr-2 h-4 w-4" />
-                My Notes
+                Мои заметки
               </Button>
             </Link>
             <Link href="/note/new">
@@ -114,7 +114,7 @@ export function NoteSidebar() {
           <div className="pt-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Folders
+                Папки
               </span>
               <Dialog open={isCreateFolderOpen} onOpenChange={setIsCreateFolderOpen}>
                 <DialogTrigger asChild>
@@ -124,16 +124,16 @@ export function NoteSidebar() {
                 </DialogTrigger>
                 <DialogContent className="bg-card text-card-foreground">
                   <DialogHeader>
-                    <DialogTitle className="heading">Create Folder</DialogTitle>
+                    <DialogTitle className="heading">СОЗДАТЬ ПАПКУ</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="folderName">Folder Name</Label>
+                      <Label htmlFor="folderName">Название папки</Label>
                       <Input
                         id="folderName"
                         value={newFolderName}
                         onChange={(e) => setNewFolderName(e.target.value)}
-                        placeholder="Enter folder name"
+                        placeholder="Введите название папки"
                         onKeyDown={(e) => {
                           if (e.key === "Enter") handleCreateFolder();
                         }}
@@ -144,7 +144,7 @@ export function NoteSidebar() {
                       disabled={!newFolderName.trim() || createFolderMutation.isPending}
                       className="w-full"
                     >
-                      Create
+                      Создать
                     </Button>
                   </div>
                 </DialogContent>
@@ -172,7 +172,7 @@ export function NoteSidebar() {
               className="w-full justify-start"
             >
               <Star className="mr-2 h-4 w-4" />
-              Favorites
+              Избранное
             </Button>
           </Link>
 
@@ -183,7 +183,7 @@ export function NoteSidebar() {
               className="w-full justify-start"
             >
               <Key className="mr-2 h-4 w-4" />
-              Password Generator
+              Генератор паролей
             </Button>
           </Link>
 
@@ -195,7 +195,7 @@ export function NoteSidebar() {
                 className="w-full justify-start"
               >
                 <Users className="mr-2 h-4 w-4" />
-                Users
+                Пользователи
               </Button>
             </Link>
           )}

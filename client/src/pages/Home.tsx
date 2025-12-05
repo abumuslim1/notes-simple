@@ -36,17 +36,17 @@ export default function Home() {
       <div className="mb-12 relative">
         <div className="absolute top-0 right-0 w-96 h-96 light-ray opacity-20 pointer-events-none" />
         <h1 className="text-6xl font-bold text-gradient-light mb-4 heading">
-          MY NOTES
+          МОИ ЗАМЕТКИ
         </h1>
         <p className="text-muted-foreground text-lg">
-          Organize your thoughts in the shadows, illuminate your ideas
+          Организуйте свои мысли в тенях, освещайте свои идеи
         </p>
       </div>
 
       {/* Folders Section */}
       {folders.length > 0 && (
         <div className="mb-12">
-          <h2 className="text-2xl font-bold text-foreground mb-6 heading">FOLDERS</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-6 heading">ПАПКИ</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {folders.map((folder) => (
               <Link key={folder.id} href={`/folder/${folder.id}`}>
@@ -66,7 +66,7 @@ export default function Home() {
 
       {/* Notes Section */}
       <div>
-        <h2 className="text-2xl font-bold text-foreground mb-6 heading">ALL NOTES</h2>
+        <h2 className="text-2xl font-bold text-foreground mb-6 heading">ВСЕ ЗАМЕТКИ</h2>
         {notes.length === 0 ? (
           <Card className="card-cinematic border-cinematic p-12 text-center">
             <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
@@ -74,16 +74,16 @@ export default function Home() {
               NO NOTES YET
             </h3>
             <p className="text-muted-foreground mb-6">
-              Create your first note to get started
+              Создайте свою первую заметку, чтобы начать
             </p>
             <Link href="/note/new">
-              <Button className="glow-golden">Create Note</Button>
+              <Button className="glow-golden">Создать заметку</Button>
             </Link>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {notes.map((note) => (
-              <Link key={note.id} href={`/note/${note.id}`}>
+              <Link key={note.id} href={`/note/${note.id}/view`}>
                 <Card className="card-cinematic border-cinematic hover:glow-golden transition-all duration-300 cursor-pointer group h-full">
                   <CardHeader>
                     <div className="flex items-start justify-between gap-2">

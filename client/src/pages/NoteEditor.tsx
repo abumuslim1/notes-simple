@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -200,7 +200,7 @@ export default function NoteEditor() {
               </Button>
             </Link>
             <h1 className="text-2xl font-bold text-gradient-light heading">
-              {noteId ? "EDIT NOTE" : "NEW NOTE"}
+              {noteId ? "РЕДАКТИРОВАТЬ ЗАМЕТКУ" : "НОВАЯ ЗАМЕТКА"}
             </h1>
           </div>
           <div className="flex items-center gap-2">
@@ -214,7 +214,7 @@ export default function NoteEditor() {
                   </DialogTrigger>
                   <DialogContent className="max-w-2xl bg-card text-card-foreground">
                     <DialogHeader>
-                      <DialogTitle className="heading">VERSION HISTORY</DialogTitle>
+                      <DialogTitle className="heading">ИСТОРИЯ ВЕРСИЙ</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 max-h-96 overflow-y-auto">
                       {versions.map((version) => (
@@ -238,7 +238,7 @@ export default function NoteEditor() {
             )}
             <Button onClick={handleSave} className="glow-golden">
               <Save className="mr-2 h-4 w-4" />
-              Save
+              Сохранить
             </Button>
           </div>
         </div>
@@ -250,13 +250,13 @@ export default function NoteEditor() {
           {/* Title */}
           <div>
             <Label htmlFor="title" className="text-lg heading">
-              TITLE
+              ЗАГОЛОВОК
             </Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter note title..."
+              placeholder="Введите заголовок заметки..."
               className="text-2xl font-semibold border-0 border-b border-border rounded-none px-0 focus-visible:ring-0 bg-transparent"
             />
           </div>
@@ -264,17 +264,17 @@ export default function NoteEditor() {
           {/* Folder Selection */}
           <div>
             <Label htmlFor="folder" className="heading">
-              FOLDER
+              ПАПКА
             </Label>
             <Select
               value={folderId?.toString() || "none"}
               onValueChange={(value) => setFolderId(value === "none" ? undefined : Number(value))}
             >
               <SelectTrigger id="folder" className="bg-card">
-                <SelectValue placeholder="No folder" />
+                <SelectValue placeholder="Без папки" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">No folder</SelectItem>
+                <SelectItem value="none">Без папки</SelectItem>
                 {folders.map((folder) => (
                   <SelectItem key={folder.id} value={folder.id.toString()}>
                     {folder.name}
@@ -287,7 +287,7 @@ export default function NoteEditor() {
           {/* Password Protection */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <Label className="heading">PASSWORD PROTECTION</Label>
+              <Label className="heading">ЗАЩИТА ПАРОЛЕМ</Label>
               <Button
                 variant="outline"
                 size="sm"
@@ -296,12 +296,12 @@ export default function NoteEditor() {
                 {hasPassword ? (
                   <>
                     <Lock className="mr-2 h-4 w-4" />
-                    Protected
+                    Защищено
                   </>
                 ) : (
                   <>
                     <Unlock className="mr-2 h-4 w-4" />
-                    Not Protected
+                    Not Защищено
                   </>
                 )}
               </Button>
@@ -311,7 +311,7 @@ export default function NoteEditor() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password..."
+                placeholder="Введите пароль..."
                 className="bg-card"
               />
             )}
@@ -319,7 +319,7 @@ export default function NoteEditor() {
 
           {/* Tags */}
           <div>
-            <Label className="heading">TAGS</Label>
+            <Label className="heading">ТЕГИ</Label>
             <div className="flex gap-2 mb-2">
               <Input
                 value={tagInput}
@@ -330,7 +330,7 @@ export default function NoteEditor() {
                     handleAddTag();
                   }
                 }}
-                placeholder="Add tag..."
+                placeholder="Добавить тег..."
                 className="bg-card"
               />
               <Button onClick={handleAddTag} variant="outline">
@@ -353,21 +353,19 @@ export default function NoteEditor() {
           {/* Content */}
           <div>
             <Label htmlFor="content" className="heading">
-              CONTENT
+              СОДЕРЖАНИЕ
             </Label>
-            <Textarea
-              id="content"
+            <RichTextEditor
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Write your note..."
-              className="min-h-96 bg-card font-mono text-base"
+              onChange={setContent}
+              placeholder="Напишите вашу заметку..."
             />
           </div>
 
           {/* File Attachments */}
           {noteId && (
             <div>
-              <Label className="heading">ATTACHMENTS</Label>
+              <Label className="heading">ВЛОЖЕНИЯ</Label>
               <div className="space-y-2">
                 <Input
                   type="file"
@@ -376,7 +374,7 @@ export default function NoteEditor() {
                   className="bg-card"
                 />
                 <div className="text-xs text-muted-foreground">
-                  Maximum file size: 50MB per file
+                  Максимальный размер файла: 50МБ
                 </div>
                 {noteFiles.length > 0 && (
                   <div className="space-y-2 mt-4">

@@ -23,7 +23,7 @@ export default function FolderView() {
 
   const updateFolderMutation = trpc.folders.update.useMutation({
     onSuccess: () => {
-      toast.success("Folder updated");
+      toast.success("Папка обновлена");
       setIsEditOpen(false);
       trpc.useUtils().folders.list.invalidate();
     },
@@ -31,7 +31,7 @@ export default function FolderView() {
 
   const deleteFolderMutation = trpc.folders.delete.useMutation({
     onSuccess: () => {
-      toast.success("Folder deleted");
+      toast.success("Папка удалена");
       window.location.href = "/";
     },
   });
@@ -55,7 +55,7 @@ export default function FolderView() {
   };
 
   const handleDeleteFolder = () => {
-    if (confirm("Are you sure you want to delete this folder? Notes will not be deleted.")) {
+    if (confirm("Вы уверены, что хотите удалить эту папку? Заметки не будут удалены.")) {
       deleteFolderMutation.mutate({ folderId });
     }
   };
@@ -63,7 +63,7 @@ export default function FolderView() {
   if (isLoading || !folder) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-muted-foreground">Loading folder...</div>
+        <div className="text-muted-foreground">Загрузка папки...</div>
       </div>
     );
   }
@@ -93,11 +93,11 @@ export default function FolderView() {
             </DialogTrigger>
             <DialogContent className="bg-card text-card-foreground">
               <DialogHeader>
-                <DialogTitle className="heading">EDIT FOLDER</DialogTitle>
+                <DialogTitle className="heading">РЕДАКТИРОВАТЬ ПАПКУ</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="folderName">Folder Name</Label>
+                  <Label htmlFor="folderName">Название папки</Label>
                   <Input
                     id="folderName"
                     value={folderName}
@@ -113,7 +113,7 @@ export default function FolderView() {
                     disabled={!folderName.trim() || updateFolderMutation.isPending}
                     className="flex-1"
                   >
-                    Update
+                    Обновить
                   </Button>
                   <Button
                     onClick={handleDeleteFolder}
@@ -128,17 +128,17 @@ export default function FolderView() {
           </Dialog>
         </div>
         <p className="text-muted-foreground text-lg">
-          {folderNotes.length} {folderNotes.length === 1 ? "note" : "notes"} in this folder
+          {folderNotes.length} {folderNotes.length === 1 ? "заметка" : folderNotes.length < 5 ? "заметки" : "заметок"} в этой папке
         </p>
       </div>
 
       {folderNotes.length === 0 ? (
         <Card className="card-cinematic border-cinematic p-12 text-center">
           <h3 className="text-xl font-semibold text-foreground mb-2 heading">
-            NO NOTES IN THIS FOLDER
+            В ЭТОЙ ПАПКЕ НЕТ ЗАМЕТОК
           </h3>
           <p className="text-muted-foreground mb-6">
-            Create a note and assign it to this folder
+            Создайте заметку и назначьте её в эту папку
           </p>
           <Link href="/note/new">
             <Button className="glow-golden">Create Note</Button>
@@ -147,7 +147,7 @@ export default function FolderView() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {folderNotes.map((note) => (
-            <Link key={note.id} href={`/note/${note.id}`}>
+            <Link key={note.id} href={`/note/${note.id}/view`}>
               <Card className="card-cinematic border-cinematic hover:glow-golden transition-all duration-300 cursor-pointer group h-full">
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2">

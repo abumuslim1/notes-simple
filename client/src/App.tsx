@@ -8,6 +8,7 @@ import { getLoginUrl } from "./const";
 import { NoteSidebar } from "./components/NoteSidebar";
 import Home from "./pages/Home";
 import NoteEditor from "./pages/NoteEditor";
+import NoteView from "./pages/NoteView";
 import Favorites from "./pages/Favorites";
 import FolderView from "./pages/FolderView";
 import PasswordGenerator from "./pages/PasswordGenerator";
@@ -63,6 +64,12 @@ function Router() {
       <Route path="/">
         <AuthenticatedLayout>
           <Home />
+        </AuthenticatedLayout>
+      </Route>
+      
+      <Route path="/note/:id/view">
+        <AuthenticatedLayout>
+          <NoteView />
         </AuthenticatedLayout>
       </Route>
       
