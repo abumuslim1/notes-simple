@@ -14,12 +14,40 @@ export const users = mysqlTable("users", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
-
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 /**
- * Folders for organizing notes
+ * License system tables
+ */
+export const licenses = mysqlTable("licenses", {
+  id: int("id").autoincrement().primaryKey(),
+  serverId: varchar("serverId", { length: 64 }).notNull().unique(),
+  ownerName: text("ownerName"),
+  expiresAt: timestamp("expiresAt"),
+  trialStartedAt: timestamp("trialStartedAt").defaultNow().notNull(),
+  isActive: int("isActive").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type License = typeof licenses.$inferSelect;
+export type InsertLicense = typeof licenses.$inferInsert;
+
+export const licenseKeys = mysqlTable("licenseKeys", {
+  id: int("id").autoincrement().primaryKey(),
+  licenseId: int("licenseId").notNull().references(() => licenses.id, { onDelete: "cascade" }),
+  key: varchar("key", { length: 256 }).notNull().unique(),
+  ownerName: text("ownerName").notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type LicenseKey = typeof licenseKeys.$inferSelect;
+export type InsertLicenseKey = typeof licenseKeys.$inferInsert;
+
+/**
+ * Folders and notes
  */
 export const folders = mysqlTable("folders", {
   id: int("id").autoincrement().primaryKey(),

@@ -15,6 +15,7 @@ import {
   Key,
   Users,
   FolderPlus,
+  Lock,
 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
@@ -205,6 +206,19 @@ export function NoteSidebar() {
               >
                 <Users className="mr-2 h-4 w-4" />
                 Пользователи
+              </Button>
+            </Link>
+          )}
+
+          {/* License (Admin only) */}
+          {user?.role === "admin" && (
+            <Link href="/license">
+              <Button
+                variant={isActive("/license") ? "default" : "ghost"}
+                className="w-full justify-start"
+              >
+                <Lock className="mr-2 h-4 w-4" />
+                Лицензии
               </Button>
             </Link>
           )}

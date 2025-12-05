@@ -13,6 +13,7 @@ import Favorites from "./pages/Favorites";
 import FolderView from "./pages/FolderView";
 import PasswordGenerator from "./pages/PasswordGenerator";
 import Users from "./pages/Users";
+import License from "./pages/License";
 import { Button } from "./components/ui/button";
 import { LogOut, Loader2 } from "lucide-react";
 import { trpc } from "./lib/trpc";
@@ -61,6 +62,10 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 function Router() {
   return (
     <Switch>
+      <Route path="/license">
+        <License />
+      </Route>
+      
       <Route path="/">
         <AuthenticatedLayout>
           <Home />

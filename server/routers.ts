@@ -8,6 +8,7 @@ import { TRPCError } from "@trpc/server";
 import { hashPassword, verifyPassword } from "./_core/password";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
+import { licenseRouter } from "./routers/license";
 
 // Admin-only procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -19,6 +20,7 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 
 export const appRouter = router({
   system: systemRouter,
+  license: licenseRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

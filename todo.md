@@ -91,3 +91,16 @@
 - [x] Optimize overall layout for compact view - оптимизирован весь интерфейс
 - [x] Test file uploads on both new and existing notes - все тесты пройдены
 - [x] Create checkpoint with improvements
+
+
+## Licensing System (develop branch)
+- [x] Add license tables to database schema (licenses, license_keys)
+- [x] Create API endpoints for license management (check, activate, get info)
+- [x] Create Python script for generating license keys
+- [x] Create License page with unique server ID
+- [x] Create License activation page with owner info and expiry date
+- [x] Implement 10-day trial period with auto-blocking
+- [x] Add License menu item to sidebar (admin only)
+- [x] Write vitest tests for license system (11 tests passing)
+- [x] Test licensing system end-to-end
+- [x] Create checkpoint with licensing system
