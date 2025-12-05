@@ -1,4 +1,3 @@
-import { COOKIE_NAME } from "@shared/const";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
@@ -8,6 +7,8 @@ import { hashPassword, verifyPassword } from "./_core/password";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
 import { licenseRouter } from "./routers/license";
+import { sdk } from "./_core/sdk";
+import { COOKIE_NAME } from "../shared/const";
 
 // Admin-only procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -73,6 +74,14 @@ export const appRouter = router({
         }
         
         await db.updateUserLastSignedIn(user.id);
+        
+        // Generate JWT token and set cookie
+        const token = sdk.generateToken({
+          userId: user.id,
+          username: user.username,
+          role: user.role,
+        });
+        sdk.setAuthCookie(ctx.res, token);
         
         return { id: user.id, username: user.username, name: user.name, role: user.role };
       }),
