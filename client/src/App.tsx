@@ -6,6 +6,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "./const";
 import { NoteSidebar } from "./components/NoteSidebar";
+import { TrialBanner } from "./components/TrialBanner";
 import Home from "./pages/Home";
 import NoteEditor from "./pages/NoteEditor";
 import NoteView from "./pages/NoteView";
@@ -37,23 +38,26 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen bg-background">
       <NoteSidebar />
-      <div className="flex-1 overflow-y-auto relative">
-        {/* User info in top right */}
-        <div className="absolute top-4 right-4 z-10 flex items-center gap-3">
-          <div className="text-right">
-            <div className="text-sm font-semibold text-foreground">{user.name}</div>
-            <div className="text-xs text-muted-foreground">{user.role}</div>
+      <div className="flex-1 flex flex-col">
+        <TrialBanner />
+        <div className="flex-1 overflow-y-auto relative">
+          {/* User info in top right */}
+          <div className="absolute top-4 right-4 z-10 flex items-center gap-3">
+            <div className="text-right">
+              <div className="text-sm font-semibold text-foreground">{user.name}</div>
+              <div className="text-xs text-muted-foreground">{user.role}</div>
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => logout()}
+              className="glow-golden"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => logout()}
-            className="glow-golden"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
+          {children}
         </div>
-        {children}
       </div>
     </div>
   );
@@ -63,7 +67,9 @@ function Router() {
   return (
     <Switch>
       <Route path="/license">
-        <License />
+        <AuthenticatedLayout>
+          <License />
+        </AuthenticatedLayout>
       </Route>
       
       <Route path="/">

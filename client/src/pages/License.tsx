@@ -60,12 +60,12 @@ export default function License() {
   const trialDays = license.trialDaysRemaining;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-2xl mx-auto">
+    <div className="flex-1 overflow-y-auto p-8">
+      <div className="max-w-2xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Лицензирование</h1>
-          <p className="text-gray-600">Управление лицензией вашего сервиса</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Лицензирование</h1>
+          <p className="text-muted-foreground">Управление лицензией вашего сервиса</p>
         </div>
 
         {/* Status Alert */}
@@ -117,9 +117,13 @@ export default function License() {
             Отправьте этот ID разработчику для получения лицензионного ключа
           </p>
           <div className="flex gap-2">
-            <div className="flex-1 bg-gray-50 border border-gray-300 rounded p-3 font-mono text-sm break-all">
-              {license.serverId}
-            </div>
+            <input
+              type="text"
+              value={license.serverId}
+              readOnly
+              className="flex-1 bg-gray-50 border border-gray-300 rounded p-3 font-mono text-sm text-gray-900"
+              style={{ wordBreak: "break-all" }}
+            />
             <Button
               onClick={handleCopyServerId}
               variant="outline"
