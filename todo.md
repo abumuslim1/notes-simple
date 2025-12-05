@@ -55,3 +55,13 @@
 - [x] Implement user deletion functionality (working)
 - [x] Test all new features
 - [x] Create checkpoint with improvements
+
+
+## Size & File Attachment Updates
+- [x] Reduce note card sizes by 50% (smaller text, padding, height)
+- [x] Implement file attachment functionality (already working)
+- [x] Add file upload UI to note editor (already present)
+- [x] Add file list display in note view (already present)
+- [x] Implement file download functionality (already working)
+- [x] Test all file operations
+- [x] Create checkpoint with improvements

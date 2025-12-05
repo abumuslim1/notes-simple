@@ -78,44 +78,40 @@ export default function Home() {
             </Link>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
             {notes.map((note) => (
               <Link key={note.id} href={`/note/${note.id}/view`}>
-                <Card className="border border-gray-200 hover:shadow-md transition-all duration-300 cursor-pointer group h-full">
-                  <CardHeader>
-                    <div className="flex items-start justify-between gap-2">
-                      <CardTitle className="text-foreground group-hover:text-primary transition-colors heading text-base line-clamp-2">
-                        {note.title}
-                      </CardTitle>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        {note.passwordHash && (
-                          <Lock className="h-4 w-4 text-accent" />
-                        )}
-                        <button
-                          onClick={(e) => handleToggleFavorite(note.id, note.isFavorite, e)}
-                          className="hover:scale-110 transition-transform"
-                        >
-                          <Star
-                            className={`h-4 w-4 ${
-                              note.isFavorite
-                                ? "fill-primary text-primary"
-                                : "text-muted-foreground"
-                            }`}
-                          />
-                        </button>
-                      </div>
+                <Card className="border border-gray-200 hover:shadow-md transition-all duration-300 cursor-pointer group h-full p-2">
+                  <div className="flex items-start justify-between gap-1 mb-1">
+                    <h3 className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2 flex-1">
+                      {note.title}
+                    </h3>
+                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                      {note.passwordHash && (
+                        <Lock className="h-3 w-3 text-accent" />
+                      )}
+                      <button
+                        onClick={(e) => handleToggleFavorite(note.id, note.isFavorite, e)}
+                        className="hover:scale-110 transition-transform"
+                      >
+                        <Star
+                          className={`h-3 w-3 ${
+                            note.isFavorite
+                              ? "fill-primary text-primary"
+                              : "text-muted-foreground"
+                          }`}
+                        />
+                      </button>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground line-clamp-3">
-                      {note.passwordHash
-                        ? "🔒 Protected content"
-                        : note.content.substring(0, 100)}
-                    </p>
-                    <div className="mt-4 text-xs text-muted-foreground">
-                      {new Date(note.updatedAt).toLocaleDateString()}
-                    </div>
-                  </CardContent>
+                  </div>
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    {note.passwordHash
+                      ? "🔒 Защищено"
+                      : note.content.substring(0, 60)}
+                  </p>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {new Date(note.updatedAt).toLocaleDateString()}
+                  </div>
                 </Card>
               </Link>
             ))}
