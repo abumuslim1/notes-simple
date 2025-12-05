@@ -188,15 +188,8 @@ export async function getLicenseInfo(): Promise<{
   trialDaysRemaining: number;
   isBlocked: boolean;
 }> {
-  const license = await getServerLicense();
-  if (!license) {
-    return {
-      serverId: "",
-      isActive: false,
-      trialDaysRemaining: 10,
-      isBlocked: false,
-    };
-  }
+  // Get or create license if it doesn't exist
+  const license = await getOrCreateServerLicense();
 
   const trialValid = await isTrialValid();
   const licenseValid = await isLicenseValid();
