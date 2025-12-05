@@ -205,7 +205,9 @@ export async function createNoteFile(file: InsertNoteFile) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result: any = await db.insert(noteFiles).values(file);
-  const insertId = result[0]?.insertId || result.insertId;
+  // Drizzle returns insertId directly in the result
+  const insertId = result?.insertId || result[0]?.insertId;
+  if (!insertId) throw new Error("Failed to get file ID from insert");
   return Number(insertId);
 }
 

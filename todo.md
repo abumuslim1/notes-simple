@@ -65,3 +65,12 @@
 - [x] Implement file download functionality (already working)
 - [x] Test all file operations
 - [x] Create checkpoint with improvements
+
+
+## File Upload Bug Fixes
+- [x] Diagnose file upload errors - fixed insertId handling in createNoteFile
+- [x] Migrate file storage from base64 to S3 (already implemented)
+- [x] Update API endpoints for S3 file handling (already working)
+- [x] Update frontend file upload component (already functional)
+- [x] Test file upload/download/delete operations
+- [x] Create checkpoint with file fixes
