@@ -389,7 +389,8 @@ export async function deleteTaskFile(id: number) {
 export async function getLicenseSettings() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.licenses.findFirst();
+  const result = await db.select().from(licenses).limit(1);
+  return result[0] || null;
 }
 
 export async function updateLicenseSettings(id: number, data: Partial<{ allowPublicRegistration: number }>) {
@@ -401,45 +402,38 @@ export async function updateLicenseSettings(id: number, data: Partial<{ allowPub
 export async function searchNotes(userId: number, query: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.notes.findMany({
-    where: (n, { and, eq, or, like }) => and(
-      eq(n.userId, userId),
+  return db.select().from(notes).where(
+    and(
+      eq(notes.userId, userId),
       or(
-        like(n.title, `%${query}%`),
-        like(n.content, `%${query}%`)
+        like(notes.title, `%${query}%`),
+        like(notes.content, `%${query}%`)
       )
-    ),
-    orderBy: (n, { desc }) => [desc(n.updatedAt)],
-  });
+    )
+  ).orderBy(desc(notes.updatedAt));
 }
 
 export async function getSearchSuggestions(userId: number, query: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.notes.findMany({
-    where: (n, { and, eq, like }) => and(
-      eq(n.userId, userId),
-      like(n.title, `%${query}%`)
-    ),
-    orderBy: (n, { desc }) => [desc(n.updatedAt)],
-    limit: 5,
-  });
+  return db.select().from(notes).where(
+    and(
+      eq(notes.userId, userId),
+      like(notes.title, `%${query}%`)
+    )
+  ).orderBy(desc(notes.updatedAt)).limit(5);
 }
 
 export async function getNoteTags(noteId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.noteTags.findMany({
-    where: (t, { eq }) => eq(t.noteId, noteId),
-  });
+  return db.select().from(noteTags).where(eq(noteTags.noteId, noteId));
 }
 
 export async function getNoteFiles(noteId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.noteFiles.findMany({
-    where: (f, { eq }) => eq(f.noteId, noteId),
-  });
+  return db.select().from(noteFiles).where(eq(noteFiles.noteId, noteId));
 }
 
 export async function createNoteTags(noteId: number, tags: string[]) {
