@@ -102,11 +102,15 @@ export const appRouter = router({
         userId: z.number(),
         name: z.string().optional(),
         email: z.string().optional(),
+        password: z.string().min(6).optional(),
       }))
       .mutation(async ({ input }) => {
         const updateData: any = {};
         if (input.name !== undefined) updateData.name = input.name;
         if (input.email !== undefined) updateData.email = input.email;
+        if (input.password !== undefined) {
+          updateData.passwordHash = await hashPassword(input.password);
+        }
         
         await db.updateUser(input.userId, updateData);
         return { success: true };

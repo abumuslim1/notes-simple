@@ -43,7 +43,7 @@ export function Register() {
     setIsLoading(true);
 
     if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+      setError("Пароль должен состоять из не менее 6 символов");
       setIsLoading(false);
       return;
     }
@@ -51,7 +51,7 @@ export function Register() {
     try {
       await registerMutation.mutateAsync({ username, password, name });
     } catch (err) {
-      setError("Registration failed. Please try again.");
+      setError("Ошибка регистрации. Попытайте еще раз.");
     } finally {
       setIsLoading(false);
     }
@@ -62,7 +62,7 @@ export function Register() {
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Notes Service</CardTitle>
-          <CardDescription className="text-center">Create a new account</CardDescription>
+          <CardDescription className="text-center">Создать новый аккаунт</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -86,18 +86,18 @@ export function Register() {
             {success && !isFirstAdmin && (
               <div className="flex items-center gap-2 p-3 bg-green-50 text-green-700 rounded-lg border border-green-200">
                 <CheckCircle className="w-4 h-4" />
-                <span className="text-sm">Account created successfully! Redirecting...</span>
+                <span className="text-sm">Аккаунт успешно создан! Перенаправление...</span>
               </div>
             )}
 
             <div className="space-y-2">
               <label htmlFor="name" className="text-sm font-medium">
-                Full Name
+                Полное имя
               </label>
               <Input
                 id="name"
                 type="text"
-                placeholder="Enter your full name"
+                placeholder="Введите ваше полное имя"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 disabled={isLoading}
@@ -107,12 +107,12 @@ export function Register() {
 
             <div className="space-y-2">
               <label htmlFor="username" className="text-sm font-medium">
-                Username
+                Логин
               </label>
               <Input
                 id="username"
                 type="text"
-                placeholder="Choose a username (3+ characters)"
+                placeholder="Выберите логин (3+ символов)"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={isLoading}
@@ -123,12 +123,12 @@ export function Register() {
 
             <div className="space-y-2">
               <label htmlFor="password" className="text-sm font-medium">
-                Password
+                Пароль
               </label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter a password (6+ characters)"
+                placeholder="Введите пароль (6+ символов)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
@@ -142,17 +142,17 @@ export function Register() {
               className="w-full bg-blue-600 hover:bg-blue-700"
               disabled={isLoading || !username || !password || !name}
             >
-              {isLoading ? "Creating account..." : "Create Account"}
+              {isLoading ? "Создание аккаунта..." : "Создать аккаунт"}
             </Button>
           </form>
 
           <div className="mt-4 text-center text-sm">
-            Already have an account?{" "}
+            Уже есть аккаунт?{" "}
             <button
               onClick={() => navigate("/login")}
               className="text-blue-600 hover:underline font-medium"
             >
-              Sign in here
+              Войти
             </button>
           </div>
         </CardContent>

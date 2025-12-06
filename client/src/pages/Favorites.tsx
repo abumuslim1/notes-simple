@@ -75,7 +75,7 @@ export default function Favorites() {
                   <p className="text-sm text-muted-foreground line-clamp-3">
                     {note.passwordHash
                       ? "🔒 Protected content"
-                      : note.content.substring(0, 100)}
+                      : note.content.replace(/<[^>]*>/g, '').substring(0, 100)}
                   </p>
                   <div className="mt-4 text-xs text-muted-foreground">
                     {new Date(note.updatedAt).toLocaleDateString()}

@@ -9,8 +9,20 @@ export default function Home() {
   const { data: folders = [] } = trpc.folders.list.useQuery();
 
   const toggleFavoriteMutation = trpc.notes.toggleFavorite.useMutation({
-    onSuccess: () => {
-      trpc.useUtils().notes.list.invalidate();
+    onMutate: async ({ noteId, isFavorite }) => {
+      await trpc.useUtils().notes.list.cancel();
+      const previousNotes = trpc.useUtils().notes.list.getData();
+      trpc.useUtils().notes.list.setData(undefined, (old) =>
+        old ? old.map((note) => 
+          note.id === noteId ? { ...note, isFavorite } : note
+        ) : old
+      );
+      return { previousNotes };
+    },
+    onError: (err, newData, context) => {
+      if (context?.previousNotes) {
+        trpc.useUtils().notes.list.setData(undefined, context.previousNotes);
+      }
     },
   });
 
@@ -109,7 +121,7 @@ export default function Home() {
                   <p className="text-sm text-gray-600 line-clamp-3 mb-4 flex-1">
                     {note.passwordHash
                       ? "🔒 Эта заметка защищена паролем"
-                      : note.content.substring(0, 100)}
+                      : note.content.replace(/<[^>]*>/g, '').substring(0, 100)}
                   </p>
 
                   {/* Footer */}

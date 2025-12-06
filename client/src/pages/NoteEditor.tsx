@@ -75,6 +75,7 @@ export default function NoteEditor() {
       toast.success("Заметка сохранена");
       trpc.useUtils().notes.get.invalidate({ noteId: noteId! });
       trpc.useUtils().notes.list.invalidate();
+      setLocation(`/note/${noteId}/view`);
     },
     onError: () => {
       toast.error("Ошибка при сохранении заметки");

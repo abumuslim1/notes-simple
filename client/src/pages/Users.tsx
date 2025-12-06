@@ -27,6 +27,7 @@ export default function Users() {
 
   // Form states for editing user
   const [editName, setEditName] = useState("");
+  const [editPassword, setEditPassword] = useState("");
   const [editRole, setEditRole] = useState<"user" | "admin">("user");
 
   const usersQuery = trpc.users.list.useQuery(undefined, {
@@ -123,13 +124,18 @@ export default function Users() {
 
   const handleEditUser = () => {
     if (!editName) {
-      setError("Name is required");
+      setError("Имя обязательно");
+      return;
+    }
+    if (editPassword && editPassword.length < 6) {
+      setError("Пароль должен состоять из не менее 6 символов");
       return;
     }
     setError("");
     updateUserMutation.mutate({
       userId: editingUser.id,
       name: editName,
+      password: editPassword || undefined,
     });
     // Update role if changed
     if (editRole !== editingUser.role) {
@@ -313,6 +319,17 @@ export default function Users() {
                                   value={editName}
                                   onChange={(e) => setEditName(e.target.value)}
                                   placeholder="Введите имя"
+                                  className="border-gray-200 bg-gray-50"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="edit-password" className="text-gray-700">Пароль (оставьте пустым, если не хотите менять)</Label>
+                                <Input
+                                  id="edit-password"
+                                  type="password"
+                                  value={editPassword}
+                                  onChange={(e) => setEditPassword(e.target.value)}
+                                  placeholder="Введите новый пароль"
                                   className="border-gray-200 bg-gray-50"
                                 />
                               </div>

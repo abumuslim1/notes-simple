@@ -33,7 +33,7 @@ export function Login() {
     try {
       await loginMutation.mutateAsync({ username, password });
     } catch (err) {
-      setError("Invalid username or password");
+      setError("Неверный логин или пароль");
     } finally {
       setIsLoading(false);
     }
@@ -44,7 +44,7 @@ export function Login() {
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Notes Service</CardTitle>
-          <CardDescription className="text-center">Sign in to your account</CardDescription>
+          <CardDescription className="text-center">Войдите в свой аккаунт</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -57,12 +57,12 @@ export function Login() {
 
             <div className="space-y-2">
               <label htmlFor="username" className="text-sm font-medium">
-                Username
+                Логин
               </label>
               <Input
                 id="username"
                 type="text"
-                placeholder="Enter your username"
+                placeholder="Введите ваш логин"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={isLoading}
@@ -72,12 +72,12 @@ export function Login() {
 
             <div className="space-y-2">
               <label htmlFor="password" className="text-sm font-medium">
-                Password
+                Пароль
               </label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder="Введите ваш пароль"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
@@ -90,17 +90,17 @@ export function Login() {
               className="w-full bg-blue-600 hover:bg-blue-700"
               disabled={isLoading || !username || !password}
             >
-              {isLoading ? "Signing in..." : "Sign In"}
+              {isLoading ? "Вход..." : "Войти"}
             </Button>
           </form>
 
           <div className="mt-4 text-center text-sm">
-            Don't have an account?{" "}
+            Нет аккаунта?{" "}
             <button
               onClick={() => navigate("/register")}
               className="text-blue-600 hover:underline font-medium"
             >
-              Register here
+              Зарегистрируйтесь
             </button>
           </div>
         </CardContent>
