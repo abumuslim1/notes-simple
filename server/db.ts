@@ -385,3 +385,87 @@ export async function deleteTaskFile(id: number) {
   if (!db) throw new Error("Database not available");
   return db.delete(taskFiles).where(eq(taskFiles.id, id));
 }
+
+export async function getLicenseSettings() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.query.licenses.findFirst();
+}
+
+export async function updateLicenseSettings(id: number, data: Partial<{ allowPublicRegistration: number }>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(licenses).set(data).where(eq(licenses.id, id));
+}
+
+export async function searchNotes(userId: number, query: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.query.notes.findMany({
+    where: (n, { and, eq, or, like }) => and(
+      eq(n.userId, userId),
+      or(
+        like(n.title, `%${query}%`),
+        like(n.content, `%${query}%`)
+      )
+    ),
+    orderBy: (n, { desc }) => [desc(n.updatedAt)],
+  });
+}
+
+export async function getSearchSuggestions(userId: number, query: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.query.notes.findMany({
+    where: (n, { and, eq, like }) => and(
+      eq(n.userId, userId),
+      like(n.title, `%${query}%`)
+    ),
+    orderBy: (n, { desc }) => [desc(n.updatedAt)],
+    limit: 5,
+  });
+}
+
+export async function getNoteTags(noteId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.query.noteTags.findMany({
+    where: (t, { eq }) => eq(t.noteId, noteId),
+  });
+}
+
+export async function getNoteFiles(noteId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.query.noteFiles.findMany({
+    where: (f, { eq }) => eq(f.noteId, noteId),
+  });
+}
+
+export async function createNoteTags(noteId: number, tags: string[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const values = tags.map(tag => ({ noteId, tag }));
+  if (values.length > 0) {
+    await db.insert(noteTags).values(values);
+  }
+}
+
+export async function deleteNoteTags(noteId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.delete(noteTags).where(eq(noteTags.noteId, noteId));
+}
+
+export async function updateUserLastSignedIn(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, id));
+}
+
+export async function updateUserRole(id: number, role: 'admin' | 'user') {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(users).set({ role }).where(eq(users.id, id));
+}

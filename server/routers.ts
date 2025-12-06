@@ -145,10 +145,7 @@ export const appRouter = router({
     create: protectedProcedure
       .input(z.object({ name: z.string().min(1).max(255) }))
       .mutation(async ({ ctx, input }) => {
-        const folderId = await db.createFolder({
-          name: input.name,
-          userId: ctx.user.id,
-        });
+        const folderId = await db.createFolder(ctx.user.id, input.name);
         return { id: folderId };
       }),
     
@@ -158,7 +155,7 @@ export const appRouter = router({
         name: z.string().min(1).max(255),
       }))
       .mutation(async ({ input }) => {
-        await db.updateFolder(input.folderId, input.name);
+        await db.updateFolder(input.folderId, { name: input.name });
         return { success: true };
       }),
     
@@ -195,23 +192,21 @@ export const appRouter = router({
         tags: z.array(z.string()).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const noteId = await db.createNote({
-          title: input.title,
-          content: input.content,
-          userId: ctx.user.id,
-          folderId: input.folderId,
-          passwordHash: input.password ? await hashPassword(input.password) : undefined,
-          isFavorite: false,
-        });
+        const noteId = await db.createNote(
+          ctx.user.id,
+          input.folderId || null,
+          input.title,
+          input.content
+        );
         
         // Ensure noteId is valid before creating version
         if (noteId && !isNaN(noteId)) {
           // Create initial version
-          await db.createNoteVersion({
+          await db.createNoteVersion(
             noteId,
-            title: input.title,
-            content: input.content,
-          });
+            input.content,
+            input.title
+          );
           
           // Add tags if provided
           if (input.tags && input.tags.length > 0) {
@@ -247,11 +242,11 @@ export const appRouter = router({
         if (input.title !== undefined || input.content !== undefined) {
           const note = await db.getNoteById(input.noteId);
           if (note) {
-            await db.createNoteVersion({
-              noteId: input.noteId,
-              title: note.title,
-              content: note.content,
-            });
+            await db.createNoteVersion(
+              input.noteId,
+              note.content,
+              note.title
+            );
           }
         }
         
@@ -279,7 +274,7 @@ export const appRouter = router({
         isFavorite: z.boolean(),
       }))
       .mutation(async ({ input }) => {
-        await db.toggleNoteFavorite(input.noteId, input.isFavorite);
+        await db.toggleNoteFavorite(input.noteId, input.isFavorite ? 1 : 0);
         return { success: true };
       }),
     
@@ -349,14 +344,14 @@ export const appRouter = router({
         const { url } = await storagePut(fileKey, buffer, input.mimeType);
         
         // Save to database
-        const fileId = await db.createNoteFile({
-          noteId: input.noteId,
-          fileName: input.fileName,
+        const fileId = await db.createNoteFile(
+          input.noteId,
+          input.fileName,
           fileKey,
-          fileUrl: url,
+          url,
           fileSize,
-          mimeType: input.mimeType,
-        });
+          input.mimeType
+        );
         
         return { id: fileId, url };
       }),

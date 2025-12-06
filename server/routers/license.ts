@@ -75,9 +75,12 @@ export const licenseRouter = router({
       allowPublicRegistration: z.boolean(),
     }))
     .mutation(async ({ input }) => {
-      await db.updateLicenseSettings({
-        allowPublicRegistration: input.allowPublicRegistration ? 1 : 0,
-      });
+      const license = await db.getLicenseSettings();
+      if (license) {
+        await db.updateLicenseSettings(license.id, {
+          allowPublicRegistration: input.allowPublicRegistration ? 1 : 0,
+        });
+      }
       return { success: true };
     }),
 });
