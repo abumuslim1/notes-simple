@@ -1,6 +1,6 @@
 import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, folders, notes, noteVersions, noteFiles, noteTags, InsertFolder, InsertNote, InsertNoteVersion, InsertNoteFile, InsertNoteTag } from "../drizzle/schema";
+import { InsertUser, users, folders, notes, noteVersions, noteFiles, noteTags, licenses, InsertFolder, InsertNote, InsertNoteVersion, InsertNoteFile, InsertNoteTag } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -282,4 +282,22 @@ export async function getSearchSuggestions(userId: number, query: string, limit:
     )
     .orderBy(desc(notes.updatedAt))
     .limit(limit);
+}
+
+
+// License settings
+export async function getLicenseSettings() {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(licenses).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function updateLicenseSettings(data: Partial<{ allowPublicRegistration: number }>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const license = await getLicenseSettings();
+  if (license) {
+    await db.update(licenses).set(data).where(eq(licenses.id, license.id));
+  }
 }

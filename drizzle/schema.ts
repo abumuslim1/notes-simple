@@ -27,6 +27,7 @@ export const licenses = mysqlTable("licenses", {
   expiresAt: timestamp("expiresAt"),
   trialStartedAt: timestamp("trialStartedAt").defaultNow().notNull(),
   isActive: int("isActive").default(0).notNull(),
+  allowPublicRegistration: int("allowPublicRegistration").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

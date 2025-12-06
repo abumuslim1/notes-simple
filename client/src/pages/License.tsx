@@ -189,6 +189,22 @@ export default function License() {
             </li>
           </ol>
         </div>
+
+        {/* Version and Author Section */}
+        <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <h3 className="font-semibold text-blue-900 mb-3">Информация о сервисе</h3>
+          <div className="space-y-2 text-sm text-blue-800">
+            <p>
+              <strong>Сервис:</strong> Notes Service
+            </p>
+            <p>
+              <strong>Версия:</strong> 1.0.0
+            </p>
+            <p>
+              <strong>Разработчик:</strong> <a href="https://abumuslim.ru" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">abumuslim.ru</a>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
