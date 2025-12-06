@@ -35,17 +35,13 @@ export async function createUser(username: string, passwordHash: string, name: s
 export async function getUserByUsername(username: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.users.findFirst({
-    where: (u, { eq }) => eq(u.username, username),
-  });
+  return db.select().from(users).where(eq(users.username, username)).then(r => r[0] || null);
 }
 
 export async function getUserById(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.users.findFirst({
-    where: (u, { eq }) => eq(u.id, id),
-  });
+  return db.select().from(users).where(eq(users.id, id)).then(r => r[0] || null);
 }
 
 export async function updateUser(id: number, data: Partial<{ name: string; email: string; role: "user" | "admin" }>) {
@@ -69,7 +65,7 @@ export async function deleteUser(id: number) {
 export async function getAllUsers() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.users.findMany();
+  return db.select().from(users);
 }
 
 export async function countUsers() {
@@ -87,7 +83,6 @@ export async function createFolder(userId: number, name: string, color?: string)
   const result: any = await db.insert(folders).values({
     userId,
     name,
-    color: color || "#3b82f6",
   });
   return result[0].insertId;
 }
@@ -95,9 +90,7 @@ export async function createFolder(userId: number, name: string, color?: string)
 export async function getFoldersByUserId(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.folders.findMany({
-    where: (f, { eq }) => eq(f.userId, userId),
-  });
+  return db.select().from(folders).where(eq(folders.userId, userId));
 }
 
 export async function updateFolder(id: number, data: Partial<{ name: string; color: string }>) {
@@ -122,7 +115,7 @@ export async function createNote(userId: number, folderId: number | null, title:
     folderId,
     title,
     content,
-    isFavorite: 0,
+    isFavorite: false,
   });
   return result[0].insertId;
 }
@@ -130,42 +123,37 @@ export async function createNote(userId: number, folderId: number | null, title:
 export async function getNotesByUserId(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.notes.findMany({
-    where: (n, { eq }) => eq(n.userId, userId),
-    orderBy: (n, { desc }) => desc(n.updatedAt),
-  });
+  return db.select().from(notes).where(eq(notes.userId, userId)).orderBy(desc(notes.updatedAt));
 }
 
 export async function getNotesByFolderId(folderId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.notes.findMany({
-    where: (n, { eq }) => eq(n.folderId, folderId),
-    orderBy: (n, { desc }) => desc(n.updatedAt),
-  });
+  return db.select().from(notes).where(eq(notes.folderId, folderId)).orderBy(desc(notes.updatedAt));
 }
 
 export async function getFavoriteNotes(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.notes.findMany({
-    where: (n, { eq, and }) => and(eq(n.userId, userId), eq(n.isFavorite, 1)),
-    orderBy: (n, { desc }) => desc(n.updatedAt),
-  });
+  return db.select().from(notes).where(
+    and(eq(notes.userId, userId), eq(notes.isFavorite, true))
+  ).orderBy(desc(notes.updatedAt));
 }
 
 export async function getNoteById(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.notes.findFirst({
-    where: (n, { eq }) => eq(n.id, id),
-  });
+  return db.select().from(notes).where(eq(notes.id, id)).then(r => r[0] || null);
 }
 
 export async function updateNote(id: number, data: Partial<{ title: string; content: string; isFavorite: number }>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.update(notes).set(data).where(eq(notes.id, id));
+  const updateData: any = {};
+  if (data.title !== undefined) updateData.title = data.title;
+  if (data.content !== undefined) updateData.content = data.content;
+  if (data.isFavorite !== undefined) updateData.isFavorite = Boolean(data.isFavorite);
+  return db.update(notes).set(updateData).where(eq(notes.id, id));
 }
 
 export async function deleteNote(id: number) {
@@ -177,7 +165,7 @@ export async function deleteNote(id: number) {
 export async function toggleNoteFavorite(id: number, isFavorite: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.update(notes).set({ isFavorite }).where(eq(notes.id, id));
+  return db.update(notes).set({ isFavorite: Boolean(isFavorite) }).where(eq(notes.id, id));
 }
 
 // Note Files
@@ -199,9 +187,7 @@ export async function createNoteFile(noteId: number, fileName: string, fileKey: 
 export async function getNoteFilesByNoteId(noteId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.noteFiles.findMany({
-    where: (f, { eq }) => eq(f.noteId, noteId),
-  });
+  return db.select().from(noteFiles).where(eq(noteFiles.noteId, noteId));
 }
 
 export async function deleteNoteFile(id: number) {
@@ -226,17 +212,14 @@ export async function createNoteVersion(noteId: number, content: string, title: 
 export async function getNoteVersions(noteId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.noteVersions.findMany({
-    where: (v, { eq }) => eq(v.noteId, noteId),
-    orderBy: (v, { desc }) => desc(v.createdAt),
-  });
+  return db.select().from(noteVersions).where(eq(noteVersions.noteId, noteId)).orderBy(desc(noteVersions.createdAt));
 }
 
 // Licenses
 export async function getLicense() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.licenses.findFirst();
+  return db.select().from(licenses).limit(1).then(r => r[0] || null);
 }
 
 export async function createLicense(serverId: string, ownerName: string): Promise<number> {
@@ -274,10 +257,7 @@ export async function createTaskBoardColumn(data: {
 export async function getTaskBoardColumnsByUserId(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.taskBoardColumns.findMany({
-    where: (columns, { eq }) => eq(columns.userId, userId),
-    orderBy: (columns, { asc }) => asc(columns.position),
-  });
+  return db.select().from(taskBoardColumns).where(eq(taskBoardColumns.userId, userId)).orderBy(taskBoardColumns.position);
 }
 
 export async function updateTaskBoardColumn(
@@ -314,18 +294,13 @@ export async function createTask(data: {
 export async function getTasksByColumnId(columnId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.tasks.findMany({
-    where: (t, { eq }) => eq(t.columnId, columnId),
-    orderBy: (t, { asc }) => asc(t.position),
-  });
+  return db.select().from(tasks).where(eq(tasks.columnId, columnId)).orderBy(tasks.position);
 }
 
 export async function getTaskById(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.tasks.findFirst({
-    where: (t, { eq }) => eq(t.id, id),
-  });
+  return db.select().from(tasks).where(eq(tasks.id, id)).then(r => r[0] || null);
 }
 
 export async function updateTask(
@@ -348,36 +323,26 @@ export async function deleteTask(id: number) {
   return db.delete(tasks).where(eq(tasks.id, id));
 }
 
-export async function moveTask(taskId: number, columnId: number, position: number) {
+// Task Files
+export async function createTaskFile(taskId: number, fileName: string, fileKey: string, fileUrl: string, fileSize: number, mimeType?: string): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db
-    .update(tasks)
-    .set({ columnId, position })
-    .where(eq(tasks.id, taskId));
-}
 
-// Task File Functions
-export async function createTaskFile(data: {
-  taskId: number;
-  fileName: string;
-  fileKey: string;
-  fileUrl: string;
-  fileSize: number;
-  mimeType?: string;
-}) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const result: any = await db.insert(taskFiles).values(data);
+  const result: any = await db.insert(taskFiles).values({
+    taskId,
+    fileName,
+    fileKey,
+    fileUrl,
+    fileSize,
+    mimeType,
+  });
   return result[0].insertId;
 }
 
 export async function getTaskFilesByTaskId(taskId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.taskFiles.findMany({
-    where: (f, { eq }) => eq(f.taskId, taskId),
-  });
+  return db.select().from(taskFiles).where(eq(taskFiles.taskId, taskId));
 }
 
 export async function deleteTaskFile(id: number) {
@@ -439,11 +404,9 @@ export async function getNoteFiles(noteId: number) {
 export async function createNoteTags(noteId: number, tags: string[]) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
   const values = tags.map(tag => ({ noteId, tag }));
-  if (values.length > 0) {
-    await db.insert(noteTags).values(values);
-  }
+  const result: any = await db.insert(noteTags).values(values);
+  return result[0].insertId;
 }
 
 export async function deleteNoteTags(noteId: number) {
@@ -452,14 +415,55 @@ export async function deleteNoteTags(noteId: number) {
   return db.delete(noteTags).where(eq(noteTags.noteId, noteId));
 }
 
-export async function updateUserLastSignedIn(id: number) {
+export async function updateUserLastSignedIn(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, id));
+  return db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, userId));
 }
 
-export async function updateUserRole(id: number, role: 'admin' | 'user') {
+export async function updateUserRole(userId: number, role: "user" | "admin") {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.update(users).set({ role }).where(eq(users.id, id));
+  return db.update(users).set({ role }).where(eq(users.id, userId));
+}
+
+export async function getOrCreateServerLicense(serverId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  let license = await db.select().from(licenses).where(eq(licenses.serverId, serverId)).then(r => r[0] || null);
+  
+  if (!license) {
+    const result: any = await db.insert(licenses).values({
+      serverId,
+      ownerName: "Administrator",
+      isActive: 1,
+      allowPublicRegistration: 0,
+    });
+    const id = result[0].insertId;
+    license = await db.select().from(licenses).where(eq(licenses.id, id)).then(r => r[0] || null);
+  }
+  
+  return license;
+}
+
+export async function getLicenseInfo() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Get or create server license
+  const serverId = process.env.VITE_APP_ID || "default-server";
+  return getOrCreateServerLicense(serverId);
+}
+
+export async function moveTask(taskId: number, columnId: number, position: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(tasks).set({ columnId, position }).where(eq(tasks.id, taskId));
+}
+
+export async function updateNotePassword(id: number, passwordHash: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(notes).set({ passwordHash }).where(eq(notes.id, id));
 }

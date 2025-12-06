@@ -201,6 +201,12 @@ export const appRouter = router({
         
         // Ensure noteId is valid before creating version
         if (noteId && !isNaN(noteId)) {
+          // Add password if provided
+          if (input.password) {
+            const passwordHash = await hashPassword(input.password);
+            await db.updateNotePassword(noteId, passwordHash);
+          }
+          
           // Create initial version
           await db.createNoteVersion(
             noteId,
