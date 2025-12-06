@@ -22,8 +22,7 @@ import { LogOut, Loader2 } from "lucide-react";
 import { trpc } from "./lib/trpc";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
-  const [, navigate] = useLocation();
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout } = useAuth({ redirectOnUnauthenticated: true, redirectPath: "/login" });
 
   if (loading) {
     return (
@@ -34,7 +33,6 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    navigate("/login");
     return null;
   }
 
