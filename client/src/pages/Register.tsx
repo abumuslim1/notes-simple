@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, CheckCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, Crown } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
 export function Register() {
@@ -13,14 +13,23 @@ export function Register() {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [isFirstAdmin, setIsFirstAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const registerMutation = trpc.auth.register.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       setSuccess(true);
-      setTimeout(() => {
-        navigate("/login");
-      }, 1500);
+      // If this is the first user (admin), show special message
+      if (data.role === "admin") {
+        setIsFirstAdmin(true);
+        setTimeout(() => {
+          navigate("/login");
+        }, 3000);
+      } else {
+        setTimeout(() => {
+          navigate("/login");
+        }, 1500);
+      }
     },
     onError: (err) => {
       setError(err.message || "Registration failed");
@@ -64,7 +73,17 @@ export function Register() {
               </div>
             )}
 
-            {success && (
+            {success && isFirstAdmin && (
+              <div className="flex items-center gap-2 p-3 bg-amber-50 text-amber-700 rounded-lg border border-amber-200">
+                <Crown className="w-4 h-4" />
+                <div className="text-sm">
+                  <p className="font-semibold">Поздравляем! Вы администратор</p>
+                  <p className="text-xs">Вам доступны пункты "Лицензии" и "Пользователи"</p>
+                </div>
+              </div>
+            )}
+
+            {success && !isFirstAdmin && (
               <div className="flex items-center gap-2 p-3 bg-green-50 text-green-700 rounded-lg border border-green-200">
                 <CheckCircle className="w-4 h-4" />
                 <span className="text-sm">Account created successfully! Redirecting...</span>
