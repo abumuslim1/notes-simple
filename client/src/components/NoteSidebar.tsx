@@ -17,6 +17,7 @@ import {
   FolderPlus,
   Lock,
   LogOut,
+  Settings,
 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
@@ -265,6 +266,21 @@ export function NoteSidebar() {
                 >
                   <Lock className="mr-2 h-4 w-4" />
                   Лицензии
+                </Button>
+              </Link>
+
+              {/* Settings */}
+              <Link href="/settings">
+                <Button
+                  variant="ghost"
+                  className={`w-full justify-start h-8 rounded-lg text-sm ${
+                    isActive("/settings")
+                      ? "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  Настройки
                 </Button>
               </Link>
             </>

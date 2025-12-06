@@ -15,6 +15,7 @@ import FolderView from "./pages/FolderView";
 import PasswordGenerator from "./pages/PasswordGenerator";
 import Users from "./pages/Users";
 import License from "./pages/License";
+import Settings from "./pages/Settings";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { Loader2 } from "lucide-react";
@@ -104,6 +105,12 @@ function Router() {
       <Route path="/users">
         <AuthenticatedLayout>
           <Users />
+        </AuthenticatedLayout>
+      </Route>
+      
+      <Route path="/settings">
+        <AuthenticatedLayout>
+          <Settings />
         </AuthenticatedLayout>
       </Route>
       
