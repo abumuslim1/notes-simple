@@ -122,3 +122,50 @@ export const noteTags = mysqlTable("noteTags", {
 
 export type NoteTag = typeof noteTags.$inferSelect;
 export type InsertNoteTag = typeof noteTags.$inferInsert;
+
+
+/**
+ * Task Management System (Kanban Board)
+ */
+export const taskBoardColumns = mysqlTable("taskBoardColumns", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 255 }).notNull(),
+  color: varchar("color", { length: 50 }).default("blue").notNull(),
+  position: int("position").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TaskBoardColumn = typeof taskBoardColumns.$inferSelect;
+export type InsertTaskBoardColumn = typeof taskBoardColumns.$inferInsert;
+
+export const tasks = mysqlTable("tasks", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  columnId: int("columnId").notNull().references(() => taskBoardColumns.id, { onDelete: "cascade" }),
+  title: varchar("title", { length: 500 }).notNull(),
+  description: text("description"),
+  assignedToUserId: int("assignedToUserId").references(() => users.id, { onDelete: "set null" }),
+  dueDate: timestamp("dueDate"),
+  position: int("position").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Task = typeof tasks.$inferSelect;
+export type InsertTask = typeof tasks.$inferInsert;
+
+export const taskFiles = mysqlTable("taskFiles", {
+  id: int("id").autoincrement().primaryKey(),
+  taskId: int("taskId").notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  fileName: varchar("fileName", { length: 500 }).notNull(),
+  fileKey: varchar("fileKey", { length: 500 }).notNull(),
+  fileUrl: text("fileUrl").notNull(),
+  fileSize: int("fileSize").notNull(),
+  mimeType: varchar("mimeType", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TaskFile = typeof taskFiles.$inferSelect;
+export type InsertTaskFile = typeof taskFiles.$inferInsert;

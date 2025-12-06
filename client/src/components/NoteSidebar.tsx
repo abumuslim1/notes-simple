@@ -18,6 +18,7 @@ import {
   Lock,
   LogOut,
   Settings,
+  CheckSquare,
 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
@@ -132,6 +133,21 @@ export function NoteSidebar() {
               </Button>
             </Link>
           </div>
+
+          {/* Tasks */}
+          <Link href="/tasks">
+            <Button
+              variant={isActive("/tasks") ? "default" : "ghost"}
+              className={`w-full justify-start h-9 rounded-lg mb-4 ${
+                isActive("/tasks")
+                  ? "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              <CheckSquare className="mr-2 h-4 w-4" />
+              Мои задачи
+            </Button>
+          </Link>
 
           {/* Folders */}
           <div className="pt-2 pb-4">

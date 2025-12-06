@@ -16,6 +16,7 @@ import PasswordGenerator from "./pages/PasswordGenerator";
 import Users from "./pages/Users";
 import License from "./pages/License";
 import Settings from "./pages/Settings";
+import Tasks from "./pages/Tasks";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { Loader2 } from "lucide-react";
@@ -69,6 +70,12 @@ function Router() {
       <Route path="/">
         <AuthenticatedLayout>
           <Home />
+        </AuthenticatedLayout>
+      </Route>
+      
+      <Route path="/tasks">
+        <AuthenticatedLayout>
+          <Tasks />
         </AuthenticatedLayout>
       </Route>
       

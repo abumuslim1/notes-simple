@@ -7,6 +7,7 @@ import { hashPassword, verifyPassword } from "./_core/password";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
 import { licenseRouter } from "./routers/license";
+import { tasksRouter } from "./routers/tasks";
 import { sdk } from "./_core/sdk";
 import { COOKIE_NAME } from "../shared/const";
 
@@ -21,6 +22,7 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 export const appRouter = router({
   system: systemRouter,
   license: licenseRouter,
+  tasks: tasksRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     
