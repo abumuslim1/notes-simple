@@ -62,19 +62,15 @@ export default function NoteEditor() {
 
   const createNoteMutation = trpc.notes.create.useMutation({
     onSuccess: (data) => {
-      toast.success("Заметка создана");
       setLocation(`/note/${data.id}`);
-    },
-    onError: () => {
-      toast.error("Ошибка при создании заметки");
     },
   });
 
   const updateNoteMutation = trpc.notes.update.useMutation({
     onSuccess: () => {
-      toast.success("Заметка сохранена");
       trpc.useUtils().notes.get.invalidate({ noteId: noteId! });
       trpc.useUtils().notes.list.invalidate();
+      setLocation(`/note/${noteId}/view`);
     },
     onError: () => {
       toast.error("Ошибка при сохранении заметки");
@@ -141,28 +137,30 @@ export default function NoteEditor() {
     if (noteId) {
       updateNoteMutation.mutate({ noteId, ...data });
     } else {
-      const newNote = await new Promise((resolve, reject) => {
-        createNoteMutation.mutate(data, {
-          onSuccess: (result) => resolve(result),
-          onError: reject,
-        });
+      createNoteMutation.mutate(data, {
+        onSuccess: (result) => {
+          toast.success("Заметка создана");
+          if (pendingFiles.length > 0) {
+            const newNoteId = result.id;
+            for (const file of pendingFiles) {
+              const reader = new FileReader();
+              reader.onload = async () => {
+                const base64 = (reader.result as string).split(",")[1];
+                uploadFileMutation.mutate({
+                  noteId: newNoteId,
+                  fileName: file.name,
+                  fileData: base64,
+                  mimeType: file.type,
+                });
+              };
+              reader.readAsDataURL(file);
+            }
+          }
+        },
+        onError: () => {
+          toast.error("Ошибка при создании заметки");
+        },
       });
-      if (newNote && pendingFiles.length > 0) {
-        const newNoteId = (newNote as any).id;
-        for (const file of pendingFiles) {
-          const reader = new FileReader();
-          reader.onload = async () => {
-            const base64 = (reader.result as string).split(",")[1];
-            uploadFileMutation.mutate({
-              noteId: newNoteId,
-              fileName: file.name,
-              fileData: base64,
-              mimeType: file.type,
-            });
-          };
-          reader.readAsDataURL(file);
-        }
-      }
     }
   };
 

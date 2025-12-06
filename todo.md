@@ -113,3 +113,18 @@
 - [x] Remove license_generator.py from repository
 - [x] All 25 tests passing (1 auth + 11 license + 13 notes)
 - [x] Create final checkpoint with all improvements
+
+## Custom Authentication System (Replace OAuth)
+- [x] Update database schema (add username, passwordHash columns)
+- [x] Create password hashing utilities (bcrypt)
+- [x] Rewrite SDK for JWT token management
+- [x] Create API endpoints for register, login, logout
+- [x] Update tRPC procedures for new authentication
+- [x] Create Login page with username/password form
+- [x] Create Register page with username/password/name form
+- [x] Update useAuth hook for new authentication flow
+- [x] Update App.tsx for protected routes and redirects
+- [x] Update Users.tsx for new user schema
+- [x] Update auth.logout.test.ts for new authentication
+- [x] All 25 tests passing with new authentication
+- [x] Create checkpoint with custom authentication system

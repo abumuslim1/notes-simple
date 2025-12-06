@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "0c2df56d-b98d-4bb1-abec-86b432c04e0c",
-  "prevId": "81b25b9d-be5f-4390-afdb-e3e4784bf491",
+  "id": "91643eba-74c9-45e0-a38a-cd4cdffed5f8",
+  "prevId": "0c2df56d-b98d-4bb1-abec-86b432c04e0c",
   "tables": {
     "folders": {
       "name": "folders",
@@ -181,6 +181,14 @@
         },
         "isActive": {
           "name": "isActive",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "allowPublicRegistration": {
+          "name": "allowPublicRegistration",
           "type": "int",
           "primaryKey": false,
           "notNull": true,

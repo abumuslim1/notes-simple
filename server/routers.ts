@@ -1,5 +1,3 @@
-import { COOKIE_NAME } from "@shared/const";
-import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
@@ -9,7 +7,8 @@ import { hashPassword, verifyPassword } from "./_core/password";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
 import { licenseRouter } from "./routers/license";
-import { tasksRouter } from "./routers/tasks";
+import { sdk } from "./_core/sdk";
+import { COOKIE_NAME } from "../shared/const";
 
 // Admin-only procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -24,13 +23,72 @@ export const appRouter = router({
   license: licenseRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
+    
     logout: publicProcedure.mutation(({ ctx }) => {
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return {
-        success: true,
-      } as const;
+      ctx.res.clearCookie(COOKIE_NAME, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+      });
+      return { success: true };
     }),
+    
+    register: publicProcedure
+      .input(z.object({
+        username: z.string().min(3).max(64),
+        password: z.string().min(6),
+        name: z.string().min(1).max(255),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const existingUser = await db.getUserByUsername(input.username);
+        if (existingUser) {
+          throw new TRPCError({ code: "CONFLICT", message: "Username already exists" });
+        }
+        
+        // Check if this is the first user
+        const allUsers = await db.getAllUsers();
+        const isFirstUser = allUsers.length === 0;
+        
+        const passwordHash = await hashPassword(input.password);
+        const userId = await db.createUser(input.username, passwordHash, input.name, undefined, isFirstUser ? 'admin' : 'user');
+        const user = await db.getUserById(userId);
+        
+        if (!user) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create user" });
+        }
+        
+        return { id: user.id, username: user.username, name: user.name, role: user.role };
+      }),
+    
+    login: publicProcedure
+      .input(z.object({
+        username: z.string(),
+        password: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await db.getUserByUsername(input.username);
+        if (!user) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid credentials" });
+        }
+        
+        const isPasswordValid = await verifyPassword(input.password, user.passwordHash);
+        if (!isPasswordValid) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid credentials" });
+        }
+        
+        await db.updateUserLastSignedIn(user.id);
+        
+        // Generate JWT token and set cookie
+        const token = sdk.generateToken({
+          userId: user.id,
+          username: user.username,
+          role: user.role,
+        });
+        sdk.setAuthCookie(ctx.res, token);
+        
+        return { id: user.id, username: user.username, name: user.name, role: user.role };
+      }),
   }),
 
   // User management (admin only)
@@ -38,6 +96,25 @@ export const appRouter = router({
     list: adminProcedure.query(async () => {
       return db.getAllUsers();
     }),
+    
+    update: adminProcedure
+      .input(z.object({
+        userId: z.number(),
+        name: z.string().optional(),
+        email: z.string().optional(),
+        password: z.string().min(6).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const updateData: any = {};
+        if (input.name !== undefined) updateData.name = input.name;
+        if (input.email !== undefined) updateData.email = input.email;
+        if (input.password !== undefined) {
+          updateData.passwordHash = await hashPassword(input.password);
+        }
+        
+        await db.updateUser(input.userId, updateData);
+        return { success: true };
+      }),
     
     updateRole: adminProcedure
       .input(z.object({
@@ -304,11 +381,6 @@ export const appRouter = router({
         return db.getSearchSuggestions(ctx.user.id, input.query);
       }),
   }),
-
-  // Tasks
-  tasks: tasksRouter,
 });
 
 export type AppRouter = typeof appRouter;
-
-

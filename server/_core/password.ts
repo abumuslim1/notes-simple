@@ -1,11 +1,10 @@
-import { createHash } from "crypto";
+import * as bcrypt from "bcryptjs";
 
 /**
- * Hash a password using SHA-256
- * In production, consider using bcrypt or argon2 for better security
+ * Hash a password using bcrypt
  */
 export async function hashPassword(password: string): Promise<string> {
-  return createHash("sha256").update(password).digest("hex");
+  return bcrypt.hash(password, 10);
 }
 
 /**
@@ -15,6 +14,5 @@ export async function verifyPassword(
   password: string,
   hash: string
 ): Promise<boolean> {
-  const passwordHash = await hashPassword(password);
-  return passwordHash === hash;
+  return bcrypt.compare(password, hash);
 }

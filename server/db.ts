@@ -1,6 +1,6 @@
-import { and, desc, eq, like, or, sql, asc } from "drizzle-orm";
+import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, folders, notes, noteVersions, noteFiles, noteTags, licenses, taskBoardColumns, tasks, taskFiles, InsertFolder, InsertNote, InsertNoteVersion, InsertNoteFile, InsertNoteTag, InsertTaskBoardColumn, InsertTask, InsertTaskFile } from "../drizzle/schema";
+import { InsertUser, users, folders, notes, noteVersions, noteFiles, noteTags, licenses, InsertFolder, InsertNote, InsertNoteVersion, InsertNoteFile, InsertNoteTag } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -17,75 +17,35 @@ export async function getDb() {
   return _db;
 }
 
-export async function upsertUser(user: InsertUser): Promise<void> {
-  if (!user.openId) {
-    throw new Error("User openId is required for upsert");
-  }
-
+// User authentication
+export async function createUser(username: string, passwordHash: string, name: string, email?: string, role: "user" | "admin" = "user"): Promise<number> {
   const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot upsert user: database not available");
-    return;
-  }
+  if (!db) throw new Error("Database not available");
 
-  try {
-    const values: InsertUser = {
-      openId: user.openId,
-    };
-    const updateSet: Record<string, unknown> = {};
+  const result: any = await db.insert(users).values({
+    username,
+    passwordHash,
+    name,
+    email,
+    role,
+  });
 
-    const textFields = ["name", "email", "loginMethod"] as const;
-    type TextField = (typeof textFields)[number];
-
-    const assignNullable = (field: TextField) => {
-      const value = user[field];
-      if (value === undefined) return;
-      const normalized = value ?? null;
-      values[field] = normalized;
-      updateSet[field] = normalized;
-    };
-
-    textFields.forEach(assignNullable);
-
-    if (user.lastSignedIn !== undefined) {
-      values.lastSignedIn = user.lastSignedIn;
-      updateSet.lastSignedIn = user.lastSignedIn;
-    }
-    if (user.role !== undefined) {
-      values.role = user.role;
-      updateSet.role = user.role;
-    } else if (user.openId === ENV.ownerOpenId) {
-      values.role = 'admin';
-      updateSet.role = 'admin';
-    }
-
-    if (!values.lastSignedIn) {
-      values.lastSignedIn = new Date();
-    }
-
-    if (Object.keys(updateSet).length === 0) {
-      updateSet.lastSignedIn = new Date();
-    }
-
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
-      set: updateSet,
-    });
-  } catch (error) {
-    console.error("[Database] Failed to upsert user:", error);
-    throw error;
-  }
+  const insertId = result[0]?.insertId || result.insertId;
+  return Number(insertId);
 }
 
-export async function getUserByOpenId(openId: string) {
+export async function getUserByUsername(username: string) {
   const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
-    return undefined;
-  }
+  if (!db) return undefined;
 
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
-
+  const result = await db.select().from(users).where(eq(users.username, username)).limit(1);
   return result.length > 0 ? result[0] : undefined;
+}
+
+export async function updateUserLastSignedIn(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, userId));
 }
 
 // User management
@@ -100,6 +60,12 @@ export async function getUserById(id: number) {
   if (!db) return undefined;
   const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
   return result[0];
+}
+
+export async function updateUser(userId: number, data: Partial<{ name: string; email: string; role: "user" | "admin" }>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set(data).where(eq(users.id, userId));
 }
 
 export async function updateUserRole(userId: number, role: "user" | "admin") {
@@ -319,90 +285,19 @@ export async function getSearchSuggestions(userId: number, query: string, limit:
 }
 
 
-// Task Board Columns
-export async function createTaskBoardColumn(column: InsertTaskBoardColumn) {
+// License settings
+export async function getLicenseSettings() {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(licenses).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function updateLicenseSettings(data: Partial<{ allowPublicRegistration: number }>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result: any = await db.insert(taskBoardColumns).values(column);
-  const insertId = result[0]?.insertId || result.insertId;
-  return Number(insertId);
-}
-
-export async function getTaskBoardColumnsByUserId(userId: number) {
-  const db = await getDb();
-  if (!db) return [];
-  return db.select().from(taskBoardColumns).where(eq(taskBoardColumns.userId, userId)).orderBy(asc(taskBoardColumns.position));
-}
-
-export async function updateTaskBoardColumn(columnId: number, data: Partial<InsertTaskBoardColumn>) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(taskBoardColumns).set(data).where(eq(taskBoardColumns.id, columnId));
-}
-
-export async function deleteTaskBoardColumn(columnId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.delete(taskBoardColumns).where(eq(taskBoardColumns.id, columnId));
-}
-
-// Tasks
-export async function createTask(task: InsertTask) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const result: any = await db.insert(tasks).values(task);
-  const insertId = result[0]?.insertId || result.insertId;
-  return Number(insertId);
-}
-
-export async function getTasksByColumnId(columnId: number) {
-  const db = await getDb();
-  if (!db) return [];
-  return db.select().from(tasks).where(eq(tasks.columnId, columnId)).orderBy(asc(tasks.position));
-}
-
-export async function getTaskById(taskId: number) {
-  const db = await getDb();
-  if (!db) return undefined;
-  const result = await db.select().from(tasks).where(eq(tasks.id, taskId)).limit(1);
-  return result[0];
-}
-
-export async function updateTask(taskId: number, data: Partial<InsertTask>) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(tasks).set(data).where(eq(tasks.id, taskId));
-}
-
-export async function deleteTask(taskId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.delete(tasks).where(eq(tasks.id, taskId));
-}
-
-export async function moveTask(taskId: number, columnId: number, position: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(tasks).set({ columnId, position }).where(eq(tasks.id, taskId));
-}
-
-// Task Files
-export async function createTaskFile(file: InsertTaskFile) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const result: any = await db.insert(taskFiles).values(file);
-  const insertId = result[0]?.insertId || result.insertId;
-  return Number(insertId);
-}
-
-export async function getTaskFilesByTaskId(taskId: number) {
-  const db = await getDb();
-  if (!db) return [];
-  return db.select().from(taskFiles).where(eq(taskFiles.taskId, taskId));
-}
-
-export async function deleteTaskFile(fileId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.delete(taskFiles).where(eq(taskFiles.id, fileId));
+  const license = await getLicenseSettings();
+  if (license) {
+    await db.update(licenses).set(data).where(eq(licenses.id, license.id));
+  }
 }
