@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -20,14 +20,20 @@ export default function Tasks() {
 
   const { data: columns = [], refetch: refetchColumns } = trpc.tasks.getColumns.useQuery();
   
-  // Fetch all tasks from all columns
-  const allTasksQueries = columns.map(col => 
-    trpc.tasks.getTasksByColumn.useQuery({ columnId: col.id })
-  );
+  // Fetch all tasks from all columns - only when columns are loaded
+  const taskQueries = useMemo(() => {
+    return columns.map(col => ({
+      columnId: col.id,
+      query: trpc.tasks.getTasksByColumn.useQuery({ columnId: col.id }),
+    }));
+  }, [columns]);
   
-  const allTasks = allTasksQueries.flatMap(q => q.data || []);
+  const allTasks = useMemo(() => {
+    return taskQueries.flatMap(item => item.query.data || []);
+  }, [taskQueries]);
+  
   const refetchAllTasks = () => {
-    allTasksQueries.forEach(q => q.refetch());
+    taskQueries.forEach(item => item.query.refetch());
   };
   
   const createColumnMutation = trpc.tasks.createColumn.useMutation({
@@ -136,44 +142,47 @@ export default function Tasks() {
 
         <div className="flex-1 overflow-x-auto p-6">
           <div className="flex gap-6 h-full">
-            {columns.map((column, index) => (
-              <div key={column.id} className="flex items-start gap-3">
-                <TaskColumn
-                  column={column}
-                  tasks={allTasks.filter((t: any) => t.columnId === column.id)}
-                  onDelete={() => deleteColumnMutation.mutate({ id: column.id })}
-                  onRefetch={refetchAllTasks}
-                />
-                {index === columns.length - 1 && (
-                  <Dialog open={isColumnDialogOpen} onOpenChange={setIsColumnDialogOpen}>
-                    <DialogTrigger asChild>
-                      <button className="text-2xl text-gray-400 hover:text-gray-600 font-light mt-8">
-                        +
-                      </button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Создать столбец</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div>
-                          <Label htmlFor="columnName">Название столбца</Label>
-                          <Input
-                            id="columnName"
-                            value={newColumnName}
-                            onChange={(e) => setNewColumnName(e.target.value)}
-                            placeholder="Название столбца"
-                          />
+            {columns.map((column, index) => {
+              const columnTasks = allTasks.filter((t: any) => t.columnId === column.id);
+              return (
+                <div key={column.id} className="flex items-start gap-3">
+                  <TaskColumn
+                    column={column}
+                    tasks={columnTasks}
+                    onDelete={() => deleteColumnMutation.mutate({ id: column.id })}
+                    onRefetch={refetchAllTasks}
+                  />
+                  {index === columns.length - 1 && (
+                    <Dialog open={isColumnDialogOpen} onOpenChange={setIsColumnDialogOpen}>
+                      <DialogTrigger asChild>
+                        <button className="text-2xl text-gray-400 hover:text-gray-600 font-light mt-8">
+                          +
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Создать столбец</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div>
+                            <Label htmlFor="columnName">Название столбца</Label>
+                            <Input
+                              id="columnName"
+                              value={newColumnName}
+                              onChange={(e) => setNewColumnName(e.target.value)}
+                              placeholder="Название столбца"
+                            />
+                          </div>
+                          <Button onClick={handleCreateColumn} className="w-full">
+                            Создать
+                          </Button>
                         </div>
-                        <Button onClick={handleCreateColumn} className="w-full">
-                          Создать
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                )}
-              </div>
-            ))}
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                </div>
+              );
+            })}
 
             {columns.length === 0 && (
               <Dialog open={isColumnDialogOpen} onOpenChange={setIsColumnDialogOpen}>
@@ -286,50 +295,56 @@ function TaskColumn({
                 snapshot.isDraggingOver ? "bg-blue-50 rounded-lg p-2" : ""
               }`}
             >
-              {tasks.map((task: any, index: number) => (
-                <Draggable
-                  key={task.id}
-                  draggableId={`task-${task.id}`}
-                  index={index}
-                >
-                  {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      className={`bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow ${
-                        snapshot.isDragging ? "shadow-lg bg-blue-50" : ""
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 text-sm">
-                            {task.title}
-                          </h4>
-                          {task.description && (
-                            <p className="text-xs text-gray-600 mt-2 line-clamp-2">
-                              {task.description}
-                            </p>
-                          )}
-                          {task.dueDate && (
-                            <p className="text-xs text-gray-500 mt-3">
-                              {new Date(task.dueDate).toLocaleDateString("ru-RU")}
-                            </p>
-                          )}
+              {tasks && tasks.length > 0 ? (
+                tasks.map((task: any, index: number) => (
+                  <Draggable
+                    key={task.id}
+                    draggableId={`task-${task.id}`}
+                    index={index}
+                  >
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        className={`bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow ${
+                          snapshot.isDragging ? "shadow-lg bg-blue-50" : ""
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-gray-900 text-sm">
+                              {task.title}
+                            </h4>
+                            {task.description && (
+                              <p className="text-xs text-gray-600 mt-2 line-clamp-2">
+                                {task.description}
+                              </p>
+                            )}
+                            {task.dueDate && (
+                              <p className="text-xs text-gray-500 mt-3">
+                                {new Date(task.dueDate).toLocaleDateString("ru-RU")}
+                              </p>
+                            )}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteTaskMutation.mutate({ id: task.id })}
+                            className="h-5 w-5 p-0 flex-shrink-0 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-3 h-3 text-gray-400 hover:text-red-500" />
+                          </Button>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteTaskMutation.mutate({ id: task.id })}
-                          className="h-5 w-5 p-0 flex-shrink-0 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-3 h-3 text-gray-400 hover:text-red-500" />
-                        </Button>
                       </div>
-                    </div>
-                  )}
-                </Draggable>
-              ))}
+                    )}
+                  </Draggable>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-400 text-sm">
+                  Нет задач
+                </div>
+              )}
               {provided.placeholder}
             </div>
           )}
