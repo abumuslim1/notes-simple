@@ -1,6 +1,6 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Route, Switch, Redirect, useLocation } from "wouter";
+import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -15,14 +15,13 @@ import FolderView from "./pages/FolderView";
 import PasswordGenerator from "./pages/PasswordGenerator";
 import Users from "./pages/Users";
 import License from "./pages/License";
-import Settings from "./pages/Settings";
-import { Login } from "./pages/Login";
-import { Register } from "./pages/Register";
-import { Loader2 } from "lucide-react";
+import Tasks from "./pages/Tasks";
+import { Button } from "./components/ui/button";
+import { LogOut, Loader2 } from "lucide-react";
 import { trpc } from "./lib/trpc";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading, logout } = useAuth({ redirectOnUnauthenticated: true, redirectPath: "/login" });
+  const { user, loading, logout } = useAuth();
 
   if (loading) {
     return (
@@ -33,6 +32,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
+    window.location.href = getLoginUrl();
     return null;
   }
 
@@ -42,6 +42,21 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col">
         <TrialBanner />
         <div className="flex-1 overflow-y-auto relative">
+          {/* User info in top right */}
+          <div className="absolute top-4 right-4 z-10 flex items-center gap-3">
+            <div className="text-right">
+              <div className="text-sm font-semibold text-foreground">{user.name}</div>
+              <div className="text-xs text-muted-foreground">{user.role}</div>
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => logout()}
+              className="glow-golden"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
           {children}
         </div>
       </div>
@@ -52,14 +67,6 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 function Router() {
   return (
     <Switch>
-      <Route path="/login">
-        <Login />
-      </Route>
-      
-      <Route path="/register">
-        <Register />
-      </Route>
-      
       <Route path="/license">
         <AuthenticatedLayout>
           <License />
@@ -108,9 +115,9 @@ function Router() {
         </AuthenticatedLayout>
       </Route>
       
-      <Route path="/settings">
+      <Route path="/tasks">
         <AuthenticatedLayout>
-          <Settings />
+          <Tasks />
         </AuthenticatedLayout>
       </Route>
       

@@ -1,4 +1,4 @@
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, router } from "../_core/trpc";
 import {
   getOrCreateServerLicense,
   isLicenseValid,
@@ -7,16 +7,6 @@ import {
   getLicenseInfo,
 } from "../license";
 import { z } from "zod";
-import * as db from "../db";
-import { TRPCError } from "@trpc/server";
-
-// Admin-only procedure
-const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== 'admin') {
-    throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
-  }
-  return next({ ctx });
-});
 
 export const licenseRouter = router({
   /**
@@ -56,28 +46,4 @@ export const licenseRouter = router({
     const license = await getOrCreateServerLicense();
     return { serverId: license.serverId };
   }),
-
-  /**
-   * Get license settings (public registration status)
-   */
-  getSettings: publicProcedure.query(async () => {
-    const settings = await db.getLicenseSettings();
-    return {
-      allowPublicRegistration: settings?.allowPublicRegistration === 1 ? true : false,
-    };
-  }),
-
-  /**
-   * Update license settings (admin only)
-   */
-  updateSettings: adminProcedure
-    .input(z.object({
-      allowPublicRegistration: z.boolean(),
-    }))
-    .mutation(async ({ input }) => {
-      await db.updateLicenseSettings({
-        allowPublicRegistration: input.allowPublicRegistration ? 1 : 0,
-      });
-      return { success: true };
-    }),
 });
