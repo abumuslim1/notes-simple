@@ -46,15 +46,19 @@ export const appRouter = router({
           throw new TRPCError({ code: "CONFLICT", message: "Username already exists" });
         }
         
+        // Check if this is the first user
+        const allUsers = await db.getAllUsers();
+        const isFirstUser = allUsers.length === 0;
+        
         const passwordHash = await hashPassword(input.password);
-        const userId = await db.createUser(input.username, passwordHash, input.name);
+        const userId = await db.createUser(input.username, passwordHash, input.name, undefined, isFirstUser ? 'admin' : 'user');
         const user = await db.getUserById(userId);
         
         if (!user) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create user" });
         }
         
-        return { id: user.id, username: user.username, name: user.name };
+        return { id: user.id, username: user.username, name: user.name, role: user.role };
       }),
     
     login: publicProcedure

@@ -18,7 +18,7 @@ export async function getDb() {
 }
 
 // User authentication
-export async function createUser(username: string, passwordHash: string, name: string, email?: string): Promise<number> {
+export async function createUser(username: string, passwordHash: string, name: string, email?: string, role: "user" | "admin" = "user"): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -27,7 +27,7 @@ export async function createUser(username: string, passwordHash: string, name: s
     passwordHash,
     name,
     email,
-    role: "user",
+    role,
   });
 
   const insertId = result[0]?.insertId || result.insertId;

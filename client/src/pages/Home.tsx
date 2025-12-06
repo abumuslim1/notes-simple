@@ -49,17 +49,9 @@ export default function Home() {
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Мои заметки</h1>
-          <p className="text-gray-600">Организуйте свои мысли в тенях, освещайте свои идеи</p>
-        </div>
-        <Link href="/note/new">
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg h-10 px-6 flex items-center gap-2">
-            <Plus className="h-5 w-5" />
-            Новая заметка
-          </Button>
-        </Link>
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Мои заметки</h1>
+        <p className="text-gray-600">Организуйте свои мысли в тенях, освещайте свои идеи</p>
       </div>
 
       {/* Folders Section */}
