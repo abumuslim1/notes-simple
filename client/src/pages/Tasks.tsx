@@ -20,20 +20,12 @@ export default function Tasks() {
 
   const { data: columns = [], refetch: refetchColumns } = trpc.tasks.getColumns.useQuery();
   
-  // Fetch all tasks from all columns - only when columns are loaded
-  const taskQueries = useMemo(() => {
-    return columns.map(col => ({
-      columnId: col.id,
-      query: trpc.tasks.getTasksByColumn.useQuery({ columnId: col.id }),
-    }));
-  }, [columns]);
-  
-  const allTasks = useMemo(() => {
-    return taskQueries.flatMap(item => item.query.data || []);
-  }, [taskQueries]);
+  // We'll fetch tasks per column in the TaskColumn component instead
+  // This avoids conditional hook calls
+  const [tasksByColumn, setTasksByColumn] = useState<Record<number, any[]>>({});
   
   const refetchAllTasks = () => {
-    taskQueries.forEach(item => item.query.refetch());
+    refetchColumns();
   };
   
   const createColumnMutation = trpc.tasks.createColumn.useMutation({
@@ -142,13 +134,10 @@ export default function Tasks() {
 
         <div className="flex-1 overflow-x-auto p-6">
           <div className="flex gap-6 h-full">
-            {columns.map((column, index) => {
-              const columnTasks = allTasks.filter((t: any) => t.columnId === column.id);
-              return (
+            {columns.map((column, index) => (
                 <div key={column.id} className="flex items-start gap-3">
                   <TaskColumn
                     column={column}
-                    tasks={columnTasks}
                     onDelete={() => deleteColumnMutation.mutate({ id: column.id })}
                     onRefetch={refetchAllTasks}
                   />
@@ -181,8 +170,7 @@ export default function Tasks() {
                     </Dialog>
                   )}
                 </div>
-              );
-            })}
+            ))}
 
             {columns.length === 0 && (
               <Dialog open={isColumnDialogOpen} onOpenChange={setIsColumnDialogOpen}>
@@ -221,23 +209,24 @@ export default function Tasks() {
 
 function TaskColumn({
   column,
-  tasks,
   onDelete,
   onRefetch,
 }: {
   column: any;
-  tasks: any[];
   onDelete: () => void;
   onRefetch: () => void;
 }) {
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDescription, setNewTaskDescription] = useState("");
+  
+  // Fetch tasks for this column
+  const { data: tasks = [], refetch: refetchTasks } = trpc.tasks.getTasksByColumn.useQuery({ columnId: column.id });
 
   const createTaskMutation = trpc.tasks.createTask.useMutation({
     onSuccess: () => {
       toast.success("Задача создана");
-      onRefetch();
+      refetchTasks();
       setNewTaskTitle("");
       setNewTaskDescription("");
       setIsTaskDialogOpen(false);
@@ -248,7 +237,7 @@ function TaskColumn({
   const deleteTaskMutation = trpc.tasks.deleteTask.useMutation({
     onSuccess: () => {
       toast.success("Задача удалена");
-      onRefetch();
+      refetchTasks();
     },
     onError: () => toast.error("Ошибка удаления задачи"),
   });
