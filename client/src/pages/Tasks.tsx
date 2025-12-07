@@ -134,7 +134,7 @@ export default function Tasks() {
         </div>
 
         <div className="flex-1 overflow-x-auto p-6">
-          <div className="flex gap-6 h-full">
+          <div className="flex gap-6 h-full min-w-min pb-4">
             {columns.map((column, index) => (
                 <div key={column.id} className="flex items-start gap-3">
                   <TaskColumn
@@ -297,7 +297,9 @@ function TaskColumn({
                         ref={provided.innerRef}
                         {...provided.draggableProps}
                         {...provided.dragHandleProps}
-                        onClick={() => window.location.href = `/task/${task.id}`}
+                        onClick={() => {
+                          window.location.pathname = `/task/${task.id}`;
+                        }}
                         className={`bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow cursor-pointer ${
                           snapshot.isDragging ? "shadow-lg bg-blue-50" : ""
                         }`}

@@ -46,6 +46,12 @@ export const tasksRouter = router({
     }),
 
   // Task operations
+  getTaskById: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      return db.getTaskById(input.id);
+    }),
+
   getTasksByColumn: protectedProcedure
     .input(z.object({ columnId: z.number() }))
     .query(async ({ input }) => {
