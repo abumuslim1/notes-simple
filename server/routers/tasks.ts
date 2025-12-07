@@ -45,6 +45,17 @@ export const tasksRouter = router({
       return { success: true };
     }),
 
+  reorderColumns: protectedProcedure
+    .input(
+      z.object({
+        columnIds: z.array(z.number()),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      await db.reorderTaskBoardColumns(ctx.user.id, input.columnIds);
+      return { success: true };
+    }),
+
   // Task operations
   getTaskById: protectedProcedure
     .input(z.object({ id: z.number() }))

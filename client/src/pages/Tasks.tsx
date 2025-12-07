@@ -63,8 +63,15 @@ export default function Tasks() {
     });
   };
 
+  const reorderColumnsMutation = trpc.tasks.reorderColumns.useMutation({
+    onSuccess: () => {
+      refetchColumns();
+    },
+    onError: () => toast.error("Ошибка переупорядочивания столбцов"),
+  });
+
   const handleDragEnd = (result: DropResult) => {
-    const { source, destination, draggableId } = result;
+    const { source, destination, draggableId, type } = result;
 
     // If dropped outside a valid droppable area
     if (!destination) {
@@ -79,6 +86,19 @@ export default function Tasks() {
       return;
     }
 
+    // Handle column reordering
+    if (type === "COLUMN") {
+      const newColumnOrder = Array.from(columns);
+      const [movedColumn] = newColumnOrder.splice(source.index, 1);
+      newColumnOrder.splice(destination.index, 0, movedColumn);
+      
+      reorderColumnsMutation.mutate({
+        columnIds: newColumnOrder.map((col: any) => col.id),
+      });
+      return;
+    }
+
+    // Handle task reordering
     const taskId = parseInt(draggableId.split("-")[1]);
     const newColumnId = parseInt(destination.droppableId.split("-")[1]);
     const newPosition = destination.index;
@@ -134,120 +154,139 @@ export default function Tasks() {
         </div>
 
         <div className="flex-1 overflow-x-auto p-6">
-          <div className="flex gap-6 h-full min-w-min pb-4">
-            {columns.map((column, index) => (
-                <div key={column.id} className="flex items-start gap-3">
-                  <TaskColumn
-                    column={column}
-                    onDelete={() => deleteColumnMutation.mutate({ id: column.id })}
-                    onRefetch={refetchAllTasks}
-                  />
-                  {index === columns.length - 1 && (
-                    <Dialog open={isColumnDialogOpen} onOpenChange={setIsColumnDialogOpen}>
-                      <DialogTrigger asChild>
-                        <button className="text-2xl text-gray-400 hover:text-gray-600 font-light mt-8">
-                          +
-                        </button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Создать столбец</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                          <div>
-                            <Label htmlFor="columnName">Название столбца</Label>
-                            <Input
-                              id="columnName"
-                              value={newColumnName}
-                              onChange={(e) => setNewColumnName(e.target.value)}
-                              placeholder="Название столбца"
-                            />
-                          </div>
-                          <Button onClick={handleCreateColumn} className="w-full">
-                            Создать
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  )}
-                </div>
-            ))}
+          <Droppable droppableId="columns" type="COLUMN" direction="horizontal">
+            {(provided) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                className="flex gap-6 h-full min-w-min pb-4"
+              >
+                {columns.map((column, index) => (
+                  <Draggable key={column.id} draggableId={`column-${column.id}`} index={index}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        className={`flex items-start gap-3 ${snapshot.isDragging ? "opacity-50" : ""}`}
+                      >
+                        <TaskColumn
+                          column={column}
+                          onDelete={() => deleteColumnMutation.mutate({ id: column.id })}
+                          onRefetch={refetchAllTasks}
+                        />
+                        {index === columns.length - 1 && (
+                          <Dialog open={isColumnDialogOpen} onOpenChange={setIsColumnDialogOpen}>
+                            <DialogTrigger asChild>
+                              <button className="text-2xl text-gray-400 hover:text-gray-600 font-light mt-8">
+                                +
+                              </button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Создать столбец</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4 py-4">
+                                <div>
+                                  <Label htmlFor="columnName">Название столбца</Label>
+                                  <Input
+                                    id="columnName"
+                                    value={newColumnName}
+                                    onChange={(e) => setNewColumnName(e.target.value)}
+                                    placeholder="Название столбца"
+                                  />
+                                </div>
+                                <Button onClick={handleCreateColumn} className="w-full">
+                                  Создать
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        )}
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
 
-            {columns.length === 0 && (
-              <Dialog open={isColumnDialogOpen} onOpenChange={setIsColumnDialogOpen}>
-                <DialogTrigger asChild>
-                  <button className="text-2xl text-gray-400 hover:text-gray-600 font-light">
-                    +
-                  </button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Создать столбец</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div>
-                      <Label htmlFor="columnName">Название столбца</Label>
-                      <Input
-                        id="columnName"
-                        value={newColumnName}
-                        onChange={(e) => setNewColumnName(e.target.value)}
-                        placeholder="Название столбца"
-                      />
-                    </div>
-                    <Button onClick={handleCreateColumn} className="w-full">
-                      Создать
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                {columns.length === 0 && (
+                  <Dialog open={isColumnDialogOpen} onOpenChange={setIsColumnDialogOpen}>
+                    <DialogTrigger asChild>
+                      <button className="text-2xl text-gray-400 hover:text-gray-600 font-light">
+                        +
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Создать столбец</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div>
+                          <Label htmlFor="columnName">Название столбца</Label>
+                          <Input
+                            id="columnName"
+                            value={newColumnName}
+                            onChange={(e) => setNewColumnName(e.target.value)}
+                            placeholder="Название столбца"
+                          />
+                        </div>
+                        <Button onClick={handleCreateColumn} className="w-full">
+                          Создать
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
             )}
-          </div>
+          </Droppable>
         </div>
       </div>
     </DragDropContext>
   );
 }
 
-function TaskColumn({
-  column,
-  onDelete,
-  onRefetch,
-}: {
-  column: any;
-  onDelete: () => void;
-  onRefetch: () => void;
-}) {
-  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+// TaskColumn component
+function TaskColumn({ column, onDelete, onRefetch }: any) {
+  const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDescription, setNewTaskDescription] = useState("");
   const [newTaskPriority, setNewTaskPriority] = useState("medium");
   const [newTaskDueDate, setNewTaskDueDate] = useState("");
   const [newTaskAssignee, setNewTaskAssignee] = useState("");
   const [newTaskTags, setNewTaskTags] = useState("");
-  
-  // Fetch tasks for this column
-  const { data: tasks = [], refetch: refetchTasks } = trpc.tasks.getTasksByColumn.useQuery({ columnId: column.id });
-  
-  // Fetch users for assignee selection
-  const { data: users = [] } = trpc.tasks.getUsers.useQuery();
+  const [columnColor, setColumnColor] = useState(column.color);
+  const [isEditingColor, setIsEditingColor] = useState(false);
+
+  const { data: tasks = [] } = trpc.tasks.getTasksByColumnId.useQuery(
+    { columnId: column.id },
+    { enabled: !!column.id }
+  );
+
+  const { data: users = [] } = trpc.tasks.getAllUsers.useQuery();
 
   const createTaskMutation = trpc.tasks.createTask.useMutation({
     onSuccess: () => {
       toast.success("Задача создана");
-      refetchTasks();
       setNewTaskTitle("");
       setNewTaskDescription("");
-      setIsTaskDialogOpen(false);
+      setNewTaskPriority("medium");
+      setNewTaskDueDate("");
+      setNewTaskAssignee("");
+      setNewTaskTags("");
+      setIsAddingTask(false);
+      onRefetch();
     },
     onError: () => toast.error("Ошибка создания задачи"),
   });
 
-  const deleteTaskMutation = trpc.tasks.deleteTask.useMutation({
+  const updateColumnColorMutation = trpc.tasks.updateColumn.useMutation({
     onSuccess: () => {
-      toast.success("Задача удалена");
-      refetchTasks();
+      toast.success("Цвет столбца изменен");
+      setIsEditingColor(false);
+      onRefetch();
     },
-    onError: () => toast.error("Ошибка удаления задачи"),
+    onError: () => toast.error("Ошибка изменения цвета"),
   });
 
   const handleCreateTask = () => {
@@ -255,117 +294,152 @@ function TaskColumn({
       toast.error("Введите название задачи");
       return;
     }
+
     const tags = newTaskTags
       .split(",")
       .map((tag) => tag.trim())
-      .filter((tag) => tag.length > 0);
-    
+      .filter((tag) => tag);
+
     createTaskMutation.mutate({
       columnId: column.id,
       title: newTaskTitle,
-      description: newTaskDescription,
+      description: newTaskDescription || undefined,
       priority: newTaskPriority as "low" | "medium" | "high",
       dueDate: newTaskDueDate || undefined,
       assignedToUserId: newTaskAssignee ? parseInt(newTaskAssignee) : undefined,
-      tags: tags.length > 0 ? tags : undefined,
-      position: tasks.length,
+      tags,
     });
   };
 
+  const colorOptions = [
+    "#22c55e",
+    "#ef4444",
+    "#3b82f6",
+    "#f59e0b",
+    "#8b5cf6",
+    "#ec4899",
+    "#06b6d4",
+    "#6b7280",
+  ];
+
+  const priorityColors: Record<string, string> = {
+    low: "bg-green-100 text-green-800",
+    medium: "bg-yellow-100 text-yellow-800",
+    high: "bg-red-100 text-red-800",
+  };
+
+  const priorityLabels: Record<string, string> = {
+    low: "Низкий",
+    medium: "Средний",
+    high: "Высокий",
+  };
+
   return (
-    <div className="flex-shrink-0 w-80">
-      <div className="flex flex-col h-full">
-        {/* Column header with color */}
+    <div className="flex flex-col w-80 bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="relative">
         <div
-          className="rounded-lg px-4 py-3 mb-4 flex items-center justify-between"
-          style={{ backgroundColor: column.color || "#22c55e" }}
+          className="h-12 cursor-pointer hover:opacity-80 transition-opacity"
+          style={{ backgroundColor: columnColor }}
+          onClick={() => setIsEditingColor(!isEditingColor)}
         >
-          <h3 className="font-semibold text-white text-sm">{column.name}</h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onDelete}
-            className="h-6 w-6 p-0 hover:bg-white/20"
-          >
-            <Trash2 className="w-3 h-3 text-white" />
-          </Button>
+          <div className="h-full flex items-center justify-center">
+            <span className="text-white font-semibold text-sm">{column.name}</span>
+          </div>
         </div>
 
-        {/* Tasks container with Droppable */}
-        <Droppable droppableId={`column-${column.id}`}>
+        {isEditingColor && (
+          <div className="absolute top-12 left-0 bg-white border border-gray-200 rounded shadow-lg p-3 z-10 flex gap-2 flex-wrap">
+            {colorOptions.map((color) => (
+              <button
+                key={color}
+                className="w-8 h-8 rounded border-2 border-gray-300 hover:border-gray-600"
+                style={{ backgroundColor: color }}
+                onClick={() => {
+                  setColumnColor(color);
+                  updateColumnColorMutation.mutate({
+                    id: column.id,
+                    color,
+                  });
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        <button
+          onClick={() => onDelete()}
+          className="absolute top-2 right-2 text-gray-400 hover:text-red-500"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4">
+        <Droppable droppableId={`column-${column.id}`} type="TASK">
           {(provided, snapshot) => (
             <div
               ref={provided.innerRef}
               {...provided.droppableProps}
-              className={`flex-1 flex flex-col gap-3 overflow-y-auto pr-2 ${
-                snapshot.isDraggingOver ? "bg-blue-50 rounded-lg p-2" : ""
+              className={`space-y-3 min-h-20 ${
+                snapshot.isDraggingOver ? "bg-blue-50 rounded" : ""
               }`}
             >
-              {tasks && tasks.length > 0 ? (
-                tasks.map((task: any, index: number) => (
-                  <Draggable
-                    key={task.id}
-                    draggableId={`task-${task.id}`}
-                    index={index}
-                  >
+              {tasks.length > 0 ? (
+                tasks.map((task, index) => (
+                  <Draggable key={task.id} draggableId={`task-${task.id}`} index={index}>
                     {(provided, snapshot) => (
                       <div
                         ref={provided.innerRef}
                         {...provided.draggableProps}
                         {...provided.dragHandleProps}
                         onClick={() => {
-                          window.location.pathname = `/task/${task.id}`;
+                          window.location.href = `/task/${task.id}`;
                         }}
-                        className={`bg-white border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-shadow cursor-pointer ${
-                          snapshot.isDragging ? "shadow-lg bg-blue-50" : ""
+                        className={`p-3 bg-white border border-gray-200 rounded cursor-pointer hover:shadow-md transition-shadow ${
+                          snapshot.isDragging ? "opacity-50" : ""
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-gray-900 text-sm">
-                              {task.title}
-                            </h4>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteTaskMutation.mutate({ id: task.id });
-                            }}
-                            className="h-5 w-5 p-0 flex-shrink-0 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-3 h-3 text-gray-400 hover:text-red-500" />
-                          </Button>
-                        </div>
-                        
+                        <h3 className="font-semibold text-sm text-gray-900 mb-2">
+                          {task.title}
+                        </h3>
                         {task.description && (
                           <p className="text-xs text-gray-600 mb-2 line-clamp-2">
                             {task.description}
                           </p>
                         )}
-                        
-                        <div className="flex flex-wrap gap-1 mb-2">
+                        <div className="flex flex-wrap gap-2 mb-2">
                           {task.priority && (
-                            <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                              task.priority === "high" ? "bg-red-100 text-red-800" :
-                              task.priority === "medium" ? "bg-yellow-100 text-yellow-800" :
-                              "bg-green-100 text-green-800"
-                            }`}>
-                              {task.priority === "high" ? "Высокий" : task.priority === "medium" ? "Средний" : "Низкий"}
+                            <span
+                              className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                                priorityColors[task.priority] ||
+                                "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {priorityLabels[task.priority] || task.priority}
                             </span>
                           )}
+                          {task.tags && task.tags.length > 0 && (
+                            <div className="flex gap-1 flex-wrap">
+                              {task.tags.map((tag: string) => (
+                                <span
+                                  key={tag}
+                                  className="inline-block px-2 py-1 rounded text-xs bg-gray-100 text-gray-700"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        
                         {task.dueDate && (
-                          <p className="text-xs text-gray-500 mb-1">
+                          <p className="text-xs text-gray-500">
                             {new Date(task.dueDate).toLocaleDateString("ru-RU")}
                           </p>
                         )}
-                        
-                        {task.assignedToUserId && (
+
+                        {task.assignee && (
                           <p className="text-xs text-gray-500">
-                            Исполнитель: #{task.assignedToUserId}
+                            Исполнитель: {task.assignee.name || task.assignee.username}
                           </p>
                         )}
                       </div>
@@ -373,101 +447,87 @@ function TaskColumn({
                   </Draggable>
                 ))
               ) : (
-                <div className="text-center py-8 text-gray-400 text-sm">
-                  Нет задач
-                </div>
+                <p className="text-xs text-gray-400 text-center py-8">Нет задач</p>
               )}
               {provided.placeholder}
             </div>
           )}
         </Droppable>
+      </div>
 
-        {/* Add task button */}
-        <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="w-full mt-4 bg-blue-500 hover:bg-blue-600 text-white">
-              Добавить задачу
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Создать задачу</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div>
-                <Label htmlFor="taskTitle">Название</Label>
-                <Input
-                  id="taskTitle"
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                  placeholder="Название задачи"
-                />
-              </div>
-              <div>
-                <Label htmlFor="taskDescription">Описание</Label>
-                <Textarea
-                  id="taskDescription"
-                  value={newTaskDescription}
-                  onChange={(e) => setNewTaskDescription(e.target.value)}
-                  placeholder="Описание задачи"
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="taskPriority">Приоритет</Label>
-                  <select
-                    id="taskPriority"
-                    value={newTaskPriority}
-                    onChange={(e) => setNewTaskPriority(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  >
-                    <option value="low">Низкий</option>
-                    <option value="medium">Средний</option>
-                    <option value="high">Высокий</option>
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="taskDueDate">Крайний срок</Label>
-                  <Input
-                    id="taskDueDate"
-                    type="date"
-                    value={newTaskDueDate}
-                    onChange={(e) => setNewTaskDueDate(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="taskAssignee">Исполнитель</Label>
-                <select
-                  id="taskAssignee"
-                  value={newTaskAssignee}
-                  onChange={(e) => setNewTaskAssignee(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                >
-                  <option value="">Не выбран</option>
-                  {users.map((user: any) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name || user.username}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="taskTags">Теги (через запятую)</Label>
-                <Input
-                  id="taskTags"
-                  value={newTaskTags}
-                  onChange={(e) => setNewTaskTags(e.target.value)}
-                  placeholder="тег1, тег2, тег3"
-                />
-              </div>
-              <Button onClick={handleCreateTask} className="w-full">
+      <div className="border-t p-4">
+        {!isAddingTask ? (
+          <button
+            onClick={() => setIsAddingTask(true)}
+            className="w-full py-2 px-3 text-sm text-blue-600 hover:bg-blue-50 rounded border border-blue-200"
+          >
+            + Добавить задачу
+          </button>
+        ) : (
+          <div className="space-y-3">
+            <Input
+              placeholder="Название задачи"
+              value={newTaskTitle}
+              onChange={(e) => setNewTaskTitle(e.target.value)}
+              className="text-sm"
+            />
+            <Textarea
+              placeholder="Описание"
+              value={newTaskDescription}
+              onChange={(e) => setNewTaskDescription(e.target.value)}
+              className="text-sm min-h-20"
+            />
+            <select
+              value={newTaskPriority}
+              onChange={(e) => setNewTaskPriority(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded"
+            >
+              <option value="low">Низкий приоритет</option>
+              <option value="medium">Средний приоритет</option>
+              <option value="high">Высокий приоритет</option>
+            </select>
+            <Input
+              type="date"
+              value={newTaskDueDate}
+              onChange={(e) => setNewTaskDueDate(e.target.value)}
+              className="text-sm"
+            />
+            <select
+              value={newTaskAssignee}
+              onChange={(e) => setNewTaskAssignee(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded"
+            >
+              <option value="">Выберите исполнителя</option>
+              {users.map((user: any) => (
+                <option key={user.id} value={user.id}>
+                  {user.name || user.username}
+                </option>
+              ))}
+            </select>
+            <Input
+              placeholder="Теги (через запятую)"
+              value={newTaskTags}
+              onChange={(e) => setNewTaskTags(e.target.value)}
+              className="text-sm"
+            />
+            <div className="flex gap-2">
+              <Button
+                onClick={handleCreateTask}
+                className="flex-1 text-sm"
+                disabled={createTaskMutation.isPending}
+              >
                 Создать
               </Button>
+              <Button
+                onClick={() => setIsAddingTask(false)}
+                variant="outline"
+                className="flex-1 text-sm"
+              >
+                Отмена
+              </Button>
             </div>
-          </DialogContent>
-        </Dialog>
+          </div>
+        )}
       </div>
     </div>
   );

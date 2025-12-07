@@ -262,11 +262,28 @@ export async function getTaskBoardColumnsByUserId(userId: number) {
 
 export async function updateTaskBoardColumn(
   id: number,
-  data: Partial<{ name: string; color: string }>
+  data: Partial<{ name: string; color: string; position?: number }>
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   return db.update(taskBoardColumns).set(data).where(eq(taskBoardColumns.id, id));
+}
+
+export async function reorderTaskBoardColumns(
+  userId: number,
+  columnIds: number[]
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Update position for each column
+  await Promise.all(
+    columnIds.map((id, index) =>
+      db.update(taskBoardColumns)
+        .set({ position: index })
+        .where(eq(taskBoardColumns.id, id))
+    )
+  );
 }
 
 export async function deleteTaskBoardColumn(id: number) {
@@ -294,13 +311,33 @@ export async function createTask(data: {
 export async function getTasksByColumnId(columnId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.select().from(tasks).where(eq(tasks.columnId, columnId)).orderBy(tasks.position);
+  const tasksList = await db.select().from(tasks).where(eq(tasks.columnId, columnId)).orderBy(tasks.position);
+  
+  // Enrich tasks with assignee info
+  const enrichedTasks = await Promise.all(
+    tasksList.map(async (task) => {
+      if (task.assignedToUserId) {
+        const assignee = await db.select().from(users).where(eq(users.id, task.assignedToUserId)).then(r => r[0] || null);
+        return { ...task, assignee };
+      }
+      return task;
+    })
+  );
+  return enrichedTasks;
 }
 
 export async function getTaskById(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.select().from(tasks).where(eq(tasks.id, id)).then(r => r[0] || null);
+  const task = await db.select().from(tasks).where(eq(tasks.id, id)).then(r => r[0] || null);
+  if (!task) return null;
+  
+  // Get assignee info if exists
+  if (task.assignedToUserId) {
+    const assignee = await db.select().from(users).where(eq(users.id, task.assignedToUserId)).then(r => r[0] || null);
+    return { ...task, assignee };
+  }
+  return task;
 }
 
 export async function updateTask(

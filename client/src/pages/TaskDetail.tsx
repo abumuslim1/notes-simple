@@ -264,7 +264,13 @@ export default function TaskDetail() {
             )}
           </div>
 
-          {task.assignedToUserId && (
+          {(task as any).assignee && (
+            <div className="mb-6">
+              <h2 className="text-sm font-semibold text-gray-700 mb-2">Исполнитель</h2>
+              <p className="text-gray-600">{(task as any).assignee.name || (task as any).assignee.username}</p>
+            </div>
+          )}
+          {task.assignedToUserId && !(task as any).assignee && (
             <div className="mb-6">
               <h2 className="text-sm font-semibold text-gray-700 mb-2">Исполнитель</h2>
               <p className="text-gray-600">Пользователь #{task.assignedToUserId}</p>
