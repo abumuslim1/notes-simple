@@ -102,7 +102,7 @@ export default function Tasks() {
       <div className="h-full flex flex-col bg-white">
         <div className="border-b px-6 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900">Мои задачи</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Задачи</h1>
             <Dialog open={isColumnDialogOpen} onOpenChange={setIsColumnDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-blue-500 hover:bg-blue-600 text-white">
@@ -227,6 +227,9 @@ function TaskColumn({
   
   // Fetch tasks for this column
   const { data: tasks = [], refetch: refetchTasks } = trpc.tasks.getTasksByColumn.useQuery({ columnId: column.id });
+  
+  // Fetch users for assignee selection
+  const { data: users = [] } = trpc.tasks.getUsers.useQuery();
 
   const createTaskMutation = trpc.tasks.createTask.useMutation({
     onSuccess: () => {
@@ -435,14 +438,20 @@ function TaskColumn({
                 </div>
               </div>
               <div>
-                <Label htmlFor="taskAssignee">Исполнитель (ID)</Label>
-                <Input
+                <Label htmlFor="taskAssignee">Исполнитель</Label>
+                <select
                   id="taskAssignee"
-                  type="number"
                   value={newTaskAssignee}
                   onChange={(e) => setNewTaskAssignee(e.target.value)}
-                  placeholder="ID пользователя"
-                />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="">Не выбран</option>
+                  {users.map((user: any) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name || user.username}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <Label htmlFor="taskTags">Теги (через запятую)</Label>

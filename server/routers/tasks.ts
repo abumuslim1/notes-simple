@@ -128,4 +128,8 @@ export const tasksRouter = router({
       await db.moveTask(input.taskId, input.columnId, input.position);
       return { success: true };
     }),
+
+  getUsers: protectedProcedure.query(async () => {
+    return db.getAllUsers();
+  }),
 });
