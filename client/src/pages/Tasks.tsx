@@ -18,6 +18,9 @@ import {
 export default function Tasks() {
   const [newColumnName, setNewColumnName] = useState("");
   const [isColumnDialogOpen, setIsColumnDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
+  const [dateFilter, setDateFilter] = useState<{from?: string, to?: string}>({});
 
   const { data: columns = [], refetch: refetchColumns } = trpc.tasks.getColumns.useQuery();
   
@@ -151,6 +154,53 @@ export default function Tasks() {
               </DialogContent>
             </Dialog>
           </div>
+          
+          {/* Filters Panel */}
+          <div className="flex gap-4 items-center">
+            <Input
+              placeholder="Поиск по названию..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 max-w-xs"
+            />
+            <select
+              value={priorityFilter || ""}
+              onChange={(e) => setPriorityFilter(e.target.value || null)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            >
+              <option value="">Все приоритеты</option>
+              <option value="low">Низкий</option>
+              <option value="medium">Средний</option>
+              <option value="high">Высокий</option>
+            </select>
+            <Input
+              type="date"
+              placeholder="От"
+              value={dateFilter.from || ""}
+              onChange={(e) => setDateFilter({...dateFilter, from: e.target.value})}
+              className="max-w-xs"
+            />
+            <Input
+              type="date"
+              placeholder="До"
+              value={dateFilter.to || ""}
+              onChange={(e) => setDateFilter({...dateFilter, to: e.target.value})}
+              className="max-w-xs"
+            />
+            {(searchQuery || priorityFilter || dateFilter.from || dateFilter.to) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchQuery("");
+                  setPriorityFilter(null);
+                  setDateFilter({});
+                }}
+              >
+                Очистить
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="flex-1 overflow-x-auto p-6">
@@ -174,6 +224,9 @@ export default function Tasks() {
                           column={column}
                           onDelete={() => deleteColumnMutation.mutate({ id: column.id })}
                           onRefetch={refetchAllTasks}
+                          searchQuery={searchQuery}
+                          priorityFilter={priorityFilter}
+                          dateFilter={dateFilter}
                         />
                         {index === columns.length - 1 && (
                           <Dialog open={isColumnDialogOpen} onOpenChange={setIsColumnDialogOpen}>
@@ -247,7 +300,7 @@ export default function Tasks() {
 }
 
 // TaskColumn component
-function TaskColumn({ column, onDelete, onRefetch }: any) {
+function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFilter = null, dateFilter = {} }: any) {
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDescription, setNewTaskDescription] = useState("");
@@ -258,10 +311,39 @@ function TaskColumn({ column, onDelete, onRefetch }: any) {
   const [columnColor, setColumnColor] = useState(column.color);
   const [isEditingColor, setIsEditingColor] = useState(false);
 
-  const { data: tasks = [] } = trpc.tasks.getTasksByColumn.useQuery(
+  const { data: allTasks = [] } = trpc.tasks.getTasksByColumn.useQuery(
     { columnId: column.id },
     { enabled: !!column.id }
   );
+
+  // Filter tasks based on search and filters
+  const filteredTasks = allTasks.filter((task: any) => {
+    // Search filter
+    if (searchQuery && !task.title.toLowerCase().includes(searchQuery.toLowerCase()) && 
+        !task.description?.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+    
+    // Priority filter
+    if (priorityFilter && task.priority !== priorityFilter) {
+      return false;
+    }
+    
+    // Date filter
+    if (task.dueDate) {
+      const taskDate = new Date(task.dueDate).toISOString().split('T')[0];
+      if (dateFilter.from && taskDate < dateFilter.from) {
+        return false;
+      }
+      if (dateFilter.to && taskDate > dateFilter.to) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
+
+  const tasks = filteredTasks;
 
   const { data: users = [] } = trpc.tasks.getUsers.useQuery();
 
@@ -308,7 +390,7 @@ function TaskColumn({ column, onDelete, onRefetch }: any) {
       dueDate: newTaskDueDate || undefined,
       assignedToUserId: newTaskAssignee ? parseInt(newTaskAssignee) : undefined,
       tags,
-      position: tasks.length,
+      position: allTasks.length,
     });
   };
 

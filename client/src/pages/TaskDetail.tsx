@@ -23,6 +23,8 @@ export default function TaskDetail() {
     enabled: !!task,
   });
 
+  const { data: users = [] } = trpc.tasks.getUsers.useQuery();
+
   const deleteTaskMutation = trpc.tasks.deleteTask.useMutation({
     onSuccess: () => {
       toast.success("Задача удалена");
@@ -174,13 +176,19 @@ export default function TaskDetail() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Исполнитель (ID)</label>
-              <Input
-                type="number"
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Исполнитель</label>
+              <select
                 value={editData.assignedToUserId}
                 onChange={(e) => setEditData({ ...editData, assignedToUserId: e.target.value })}
-                placeholder="ID пользователя"
-              />
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Не выбран</option>
+                {users.map((user: any) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name || user.username}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
