@@ -142,3 +142,11 @@
 - [x] Add board statistics panel showing task counts by priority
 - [x] Test all new features
 - [ ] Create checkpoint with fixes and enhancements
+
+## Additional Features
+- [x] Add assignee filter to filter panel
+- [x] Add file upload functionality for task editing (not creation)
+- [x] Remove + button from right side of columns
+- [x] Add ability to edit column names
+- [x] Test all new features
+- [ ] Create checkpoint with new features

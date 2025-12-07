@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Trash2, Edit2, X, Check } from "lucide-react";
+import { ArrowLeft, Trash2, Edit2, X, Check, Upload, File } from "lucide-react";
 import { toast } from "sonner";
 
 export default function TaskDetail() {
@@ -13,6 +13,8 @@ export default function TaskDetail() {
   const taskId = params?.id ? parseInt(params.id) : null;
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<any>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const { data: task, isLoading, error, refetch } = trpc.tasks.getTaskById.useQuery(
     { id: taskId! },
@@ -92,7 +94,9 @@ export default function TaskDetail() {
     setIsEditing(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    // TODO: Implement file upload to S3
+    // For now, just save task data
     updateTaskMutation.mutate({
       id: editData.id,
       title: editData.title,
@@ -189,6 +193,51 @@ export default function TaskDetail() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Файлы</label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition">
+                <input
+                  type="file"
+                  id="file-upload"
+                  multiple
+                  onChange={(e) => {
+                    if (e.target.files) {
+                      setUploadedFiles(Array.from(e.target.files));
+                    }
+                  }}
+                  className="hidden"
+                />
+                <label htmlFor="file-upload" className="cursor-pointer">
+                  <div className="flex flex-col items-center gap-2">
+                    <Upload className="w-8 h-8 text-gray-400" />
+                    <p className="text-sm text-gray-600">Нажмите для загружения файлов</p>
+                  </div>
+                </label>
+              </div>
+              {uploadedFiles.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm font-semibold text-gray-700 mb-2">Выбранные файлы:</p>
+                  <ul className="space-y-2">
+                    {uploadedFiles.map((file, idx) => (
+                      <li key={idx} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                        <div className="flex items-center gap-2">
+                          <File className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm text-gray-700">{file.name}</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setUploadedFiles(uploadedFiles.filter((_, i) => i !== idx))}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         </div>

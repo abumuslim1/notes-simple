@@ -22,9 +22,11 @@ export default function Tasks() {
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<{from?: string, to?: string}>({});
   const [sortBy, setSortBy] = useState<"createdAt" | "dueDate" | "priority">("createdAt");
+  const [assigneeFilter, setAssigneeFilter] = useState<number | null>(null);
 
   const utils = trpc.useUtils();
   const { data: columns = [], refetch: refetchColumns } = trpc.tasks.getColumns.useQuery();
+  const { data: users = [] } = trpc.tasks.getUsers.useQuery();
   
   // We'll fetch tasks per column in the TaskColumn component instead
   // This avoids conditional hook calls
@@ -210,7 +212,19 @@ export default function Tasks() {
                   <option value="dueDate">По крайнему сроку</option>
                   <option value="priority">По приоритету</option>
                 </select>
-                {(searchQuery || priorityFilter || dateFilter.from || dateFilter.to) && (
+                <select
+                  value={assigneeFilter || ""}
+                  onChange={(e) => setAssigneeFilter(e.target.value ? parseInt(e.target.value) : null)}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="">Все исполнители</option>
+                  {users.map((user: any) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name || user.username}
+                    </option>
+                  ))}
+                </select>
+                {(searchQuery || priorityFilter || dateFilter.from || dateFilter.to || assigneeFilter) && (
               <Button
                 variant="outline"
                 size="sm"
@@ -218,6 +232,7 @@ export default function Tasks() {
                   setSearchQuery("");
                   setPriorityFilter(null);
                   setDateFilter({});
+                  setAssigneeFilter(null);
                 }}
               >
                 Очистить
@@ -251,8 +266,9 @@ export default function Tasks() {
                           priorityFilter={priorityFilter}
                           dateFilter={dateFilter}
                           sortBy={sortBy}
+                          assigneeFilter={assigneeFilter}
                         />
-                        {index === columns.length - 1 && (
+                        {false && index === columns.length - 1 && (
                           <Dialog open={isColumnDialogOpen} onOpenChange={setIsColumnDialogOpen}>
                             <DialogTrigger asChild>
                               <button className="text-2xl text-gray-400 hover:text-gray-600 font-light mt-8">
@@ -324,7 +340,7 @@ export default function Tasks() {
 }
 
 // TaskColumn component
-function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFilter = null, dateFilter = {}, sortBy = "createdAt" }: any) {
+function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFilter = null, dateFilter = {}, sortBy = "createdAt", assigneeFilter = null }: any) {
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDescription, setNewTaskDescription] = useState("");
@@ -334,6 +350,8 @@ function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFil
   const [newTaskTags, setNewTaskTags] = useState("");
   const [columnColor, setColumnColor] = useState(column.color);
   const [isEditingColor, setIsEditingColor] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newColumnName, setNewColumnName] = useState(column.name);
 
   const { data: allTasks = [] } = trpc.tasks.getTasksByColumn.useQuery(
     { columnId: column.id },
@@ -350,6 +368,11 @@ function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFil
     
     // Priority filter
     if (priorityFilter && task.priority !== priorityFilter) {
+      return false;
+    }
+    
+    // Assignee filter
+    if (assigneeFilter && task.assignedToUserId !== assigneeFilter) {
       return false;
     }
     
@@ -463,18 +486,56 @@ function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFil
     high: "Высокий",
   };
 
+  const updateColumnNameMutation = trpc.tasks.updateColumn.useMutation({
+    onSuccess: () => {
+      toast.success("Название столбца изменено");
+      setIsEditingName(false);
+      utils.tasks.getColumns.invalidate();
+      onRefetch();
+    },
+    onError: () => toast.error("Ошибка изменения названия"),
+  });
+
   return (
     <div className="flex flex-col w-80 bg-white rounded-lg border border-gray-200 overflow-hidden">
       <div className="relative">
-        <div
-          className="h-12 cursor-pointer hover:opacity-80 transition-opacity"
-          style={{ backgroundColor: columnColor }}
-          onClick={() => setIsEditingColor(!isEditingColor)}
-        >
-          <div className="h-full flex items-center justify-center">
-            <span className="text-white font-semibold text-sm">{column.name}</span>
+        {isEditingName ? (
+          <div className="h-12 flex items-center px-3 gap-2" style={{ backgroundColor: columnColor }}>
+            <input
+              type="text"
+              value={newColumnName}
+              onChange={(e) => setNewColumnName(e.target.value)}
+              onBlur={() => {
+                if (newColumnName.trim() && newColumnName !== column.name) {
+                  updateColumnNameMutation.mutate({ id: column.id, name: newColumnName });
+                } else {
+                  setIsEditingName(false);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  if (newColumnName.trim() && newColumnName !== column.name) {
+                    updateColumnNameMutation.mutate({ id: column.id, name: newColumnName });
+                  } else {
+                    setIsEditingName(false);
+                  }
+                } else if (e.key === "Escape") {
+                  setNewColumnName(column.name);
+                  setIsEditingName(false);
+                }
+              }}
+              autoFocus
+              className="flex-1 px-2 py-1 rounded text-white font-semibold text-sm bg-white bg-opacity-20 focus:outline-none focus:bg-opacity-30"
+            />
           </div>
-        </div>
+        ) : (
+          <div className="h-12 cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-between px-3" style={{ backgroundColor: columnColor }} onDoubleClick={() => setIsEditingName(true)}>
+            <span className="text-white font-semibold text-sm flex-1">{column.name}</span>
+            <button onClick={() => setIsEditingColor(!isEditingColor)} className="text-white hover:bg-white hover:bg-opacity-20 p-1 rounded">
+              ●
+            </button>
+          </div>
+        )}
 
         {isEditingColor && (
           <div className="absolute top-12 left-0 bg-white border border-gray-200 rounded shadow-lg p-3 z-10 flex gap-2 flex-wrap">
