@@ -220,6 +220,10 @@ function TaskColumn({
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDescription, setNewTaskDescription] = useState("");
+  const [newTaskPriority, setNewTaskPriority] = useState("medium");
+  const [newTaskDueDate, setNewTaskDueDate] = useState("");
+  const [newTaskAssignee, setNewTaskAssignee] = useState("");
+  const [newTaskTags, setNewTaskTags] = useState("");
   
   // Fetch tasks for this column
   const { data: tasks = [], refetch: refetchTasks } = trpc.tasks.getTasksByColumn.useQuery({ columnId: column.id });
@@ -248,10 +252,19 @@ function TaskColumn({
       toast.error("Введите название задачи");
       return;
     }
+    const tags = newTaskTags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
+    
     createTaskMutation.mutate({
       columnId: column.id,
       title: newTaskTitle,
       description: newTaskDescription,
+      priority: newTaskPriority as "low" | "medium" | "high",
+      dueDate: newTaskDueDate || undefined,
+      assignedToUserId: newTaskAssignee ? parseInt(newTaskAssignee) : undefined,
+      tags: tags.length > 0 ? tags : undefined,
       position: tasks.length,
     });
   };
@@ -300,35 +313,58 @@ function TaskColumn({
                         onClick={() => {
                           window.location.pathname = `/task/${task.id}`;
                         }}
-                        className={`bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow cursor-pointer ${
+                        className={`bg-white border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-shadow cursor-pointer ${
                           snapshot.isDragging ? "shadow-lg bg-blue-50" : ""
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start justify-between gap-2 mb-2">
                           <div className="flex-1 min-w-0">
                             <h4 className="font-semibold text-gray-900 text-sm">
                               {task.title}
                             </h4>
-                            {task.description && (
-                              <p className="text-xs text-gray-600 mt-2 line-clamp-2">
-                                {task.description}
-                              </p>
-                            )}
-                            {task.dueDate && (
-                              <p className="text-xs text-gray-500 mt-3">
-                                {new Date(task.dueDate).toLocaleDateString("ru-RU")}
-                              </p>
-                            )}
                           </div>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => deleteTaskMutation.mutate({ id: task.id })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteTaskMutation.mutate({ id: task.id });
+                            }}
                             className="h-5 w-5 p-0 flex-shrink-0 hover:bg-red-50"
                           >
                             <Trash2 className="w-3 h-3 text-gray-400 hover:text-red-500" />
                           </Button>
                         </div>
+                        
+                        {task.description && (
+                          <p className="text-xs text-gray-600 mb-2 line-clamp-2">
+                            {task.description}
+                          </p>
+                        )}
+                        
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {task.priority && (
+                            <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                              task.priority === "high" ? "bg-red-100 text-red-800" :
+                              task.priority === "medium" ? "bg-yellow-100 text-yellow-800" :
+                              "bg-green-100 text-green-800"
+                            }`}>
+                              {task.priority === "high" ? "Высокий" : task.priority === "medium" ? "Средний" : "Низкий"}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {task.dueDate && (
+                          <p className="text-xs text-gray-500 mb-1">
+                            {new Date(task.dueDate).toLocaleDateString("ru-RU")}
+                          </p>
+                        )}
+                        
+                        {task.assignedToUserId && (
+                          <p className="text-xs text-gray-500">
+                            Исполнитель: #{task.assignedToUserId}
+                          </p>
+                        )}
                       </div>
                     )}
                   </Draggable>
@@ -371,7 +407,50 @@ function TaskColumn({
                   value={newTaskDescription}
                   onChange={(e) => setNewTaskDescription(e.target.value)}
                   placeholder="Описание задачи"
-                  rows={4}
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="taskPriority">Приоритет</Label>
+                  <select
+                    id="taskPriority"
+                    value={newTaskPriority}
+                    onChange={(e) => setNewTaskPriority(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  >
+                    <option value="low">Низкий</option>
+                    <option value="medium">Средний</option>
+                    <option value="high">Высокий</option>
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="taskDueDate">Крайний срок</Label>
+                  <Input
+                    id="taskDueDate"
+                    type="date"
+                    value={newTaskDueDate}
+                    onChange={(e) => setNewTaskDueDate(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="taskAssignee">Исполнитель (ID)</Label>
+                <Input
+                  id="taskAssignee"
+                  type="number"
+                  value={newTaskAssignee}
+                  onChange={(e) => setNewTaskAssignee(e.target.value)}
+                  placeholder="ID пользователя"
+                />
+              </div>
+              <div>
+                <Label htmlFor="taskTags">Теги (через запятую)</Label>
+                <Input
+                  id="taskTags"
+                  value={newTaskTags}
+                  onChange={(e) => setNewTaskTags(e.target.value)}
+                  placeholder="тег1, тег2, тег3"
                 />
               </div>
               <Button onClick={handleCreateTask} className="w-full">
