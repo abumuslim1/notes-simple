@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useRouter } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -105,7 +106,6 @@ export default function Tasks() {
       },
       {
         onSuccess: () => {
-          // Refetch all columns to update tasks
           refetchColumns();
         },
       }
@@ -167,7 +167,7 @@ export default function Tasks() {
         </div>
 
         <div className="flex-1 overflow-x-auto p-6">
-          <div className="flex gap-6 h-full">
+          <div className="flex gap-6 h-full min-w-min">
             {columns.map((column, index) => (
               <div key={column.id} className="flex items-start gap-3">
                 <TaskColumn
@@ -286,6 +286,7 @@ function TaskColumn({
   onDelete: () => void;
   onRefetch: () => void;
 }) {
+  const [, setLocation] = useRouter() as any;
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [columnColor, setColumnColor] = useState(column.color || "#22c55e");
@@ -422,7 +423,8 @@ function TaskColumn({
                         ref={provided.innerRef}
                         {...provided.draggableProps}
                         {...provided.dragHandleProps}
-                        className={`bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow ${
+                        onClick={() => setLocation(`/task/${task.id}`)}
+                        className={`bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow cursor-pointer ${
                           snapshot.isDragging ? "shadow-lg bg-blue-50" : ""
                         }`}
                       >
@@ -469,7 +471,10 @@ function TaskColumn({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => deleteTaskMutation.mutate({ id: task.id })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteTaskMutation.mutate({ id: task.id });
+                            }}
                             className="h-5 w-5 p-0 flex-shrink-0 hover:bg-red-50"
                           >
                             <Trash2 className="w-3 h-3 text-gray-400 hover:text-red-500" />
