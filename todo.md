@@ -135,3 +135,10 @@
 - [x] Add real-time search by task name/description
 - [x] Test all new features
 - [ ] Create checkpoint with improvements
+
+## Task Management Bug Fixes & Enhancements
+- [x] Fix task updates - add proper cache invalidation when adding/moving tasks
+- [x] Add sorting options for tasks (by date, due date, priority)
+- [x] Add board statistics panel showing task counts by priority
+- [x] Test all new features
+- [ ] Create checkpoint with fixes and enhancements

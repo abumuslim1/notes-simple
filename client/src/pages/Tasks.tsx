@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -21,13 +21,13 @@ export default function Tasks() {
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<{from?: string, to?: string}>({});
+  const [sortBy, setSortBy] = useState<"createdAt" | "dueDate" | "priority">("createdAt");
 
+  const utils = trpc.useUtils();
   const { data: columns = [], refetch: refetchColumns } = trpc.tasks.getColumns.useQuery();
   
   // We'll fetch tasks per column in the TaskColumn component instead
   // This avoids conditional hook calls
-  const [tasksByColumn, setTasksByColumn] = useState<Record<number, any[]>>({});
-  
   const refetchAllTasks = () => {
     refetchColumns();
   };
@@ -51,6 +51,10 @@ export default function Tasks() {
   });
 
   const moveTaskMutation = trpc.tasks.moveTask.useMutation({
+    onSuccess: () => {
+      // Invalidate all task queries to refetch
+      utils.tasks.getTasksByColumn.invalidate();
+    },
     onError: () => toast.error("Ошибка перемещения задачи"),
   });
 
@@ -68,6 +72,7 @@ export default function Tasks() {
 
   const reorderColumnsMutation = trpc.tasks.reorderColumns.useMutation({
     onSuccess: () => {
+      utils.tasks.getColumns.invalidate();
       refetchColumns();
     },
     onError: () => toast.error("Ошибка переупорядочивания столбцов"),
@@ -106,18 +111,11 @@ export default function Tasks() {
     const newColumnId = parseInt(destination.droppableId.split("-")[1]);
     const newPosition = destination.index;
 
-    moveTaskMutation.mutate(
-      {
-        taskId,
-        columnId: newColumnId,
-        position: newPosition,
-      },
-      {
-        onSuccess: () => {
-          refetchAllTasks();
-        },
-      }
-    );
+    moveTaskMutation.mutate({
+      taskId,
+      columnId: newColumnId,
+      position: newPosition,
+    });
   };
 
   return (
@@ -155,6 +153,22 @@ export default function Tasks() {
             </Dialog>
           </div>
           
+          {/* Board Statistics */}
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200 flex gap-6">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-red-500"></div>
+              <span className="text-sm text-gray-600">Высокий приоритет</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+              <span className="text-sm text-gray-600">Средний приоритет</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-green-500"></div>
+              <span className="text-sm text-gray-600">Низкий приоритет</span>
+            </div>
+          </div>
+          
           {/* Filters Panel */}
           <div className="flex gap-4 items-center">
             <Input
@@ -183,11 +197,20 @@ export default function Tasks() {
             <Input
               type="date"
               placeholder="До"
-              value={dateFilter.to || ""}
-              onChange={(e) => setDateFilter({...dateFilter, to: e.target.value})}
-              className="max-w-xs"
-            />
-            {(searchQuery || priorityFilter || dateFilter.from || dateFilter.to) && (
+                  value={dateFilter.to || ""}
+                  onChange={(e) => setDateFilter({...dateFilter, to: e.target.value})}
+                  className="max-w-xs"
+                />
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as "createdAt" | "dueDate" | "priority")}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="createdAt">По дате создания</option>
+                  <option value="dueDate">По крайнему сроку</option>
+                  <option value="priority">По приоритету</option>
+                </select>
+                {(searchQuery || priorityFilter || dateFilter.from || dateFilter.to) && (
               <Button
                 variant="outline"
                 size="sm"
@@ -227,6 +250,7 @@ export default function Tasks() {
                           searchQuery={searchQuery}
                           priorityFilter={priorityFilter}
                           dateFilter={dateFilter}
+                          sortBy={sortBy}
                         />
                         {index === columns.length - 1 && (
                           <Dialog open={isColumnDialogOpen} onOpenChange={setIsColumnDialogOpen}>
@@ -300,7 +324,7 @@ export default function Tasks() {
 }
 
 // TaskColumn component
-function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFilter = null, dateFilter = {} }: any) {
+function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFilter = null, dateFilter = {}, sortBy = "createdAt" }: any) {
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDescription, setNewTaskDescription] = useState("");
@@ -343,9 +367,28 @@ function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFil
     return true;
   });
 
-  const tasks = filteredTasks;
+  // Sort tasks
+  const sortedTasks = [...filteredTasks].sort((a: any, b: any) => {
+    if (sortBy === "createdAt") {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    } else if (sortBy === "dueDate") {
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    } else if (sortBy === "priority") {
+      const priorityOrder = { high: 0, medium: 1, low: 2 };
+      const aOrder = priorityOrder[a.priority as keyof typeof priorityOrder] || 3;
+      const bOrder = priorityOrder[b.priority as keyof typeof priorityOrder] || 3;
+      return aOrder - bOrder;
+    }
+    return 0;
+  });
+
+  const tasks = sortedTasks;
 
   const { data: users = [] } = trpc.tasks.getUsers.useQuery();
+
+  const utils = trpc.useUtils();
 
   const createTaskMutation = trpc.tasks.createTask.useMutation({
     onSuccess: () => {
@@ -357,6 +400,8 @@ function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFil
       setNewTaskAssignee("");
       setNewTaskTags("");
       setIsAddingTask(false);
+      // Invalidate the query to refetch tasks
+      utils.tasks.getTasksByColumn.invalidate({ columnId: column.id });
       onRefetch();
     },
     onError: () => toast.error("Ошибка создания задачи"),
@@ -366,6 +411,7 @@ function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFil
     onSuccess: () => {
       toast.success("Цвет столбца изменен");
       setIsEditingColor(false);
+      utils.tasks.getColumns.invalidate();
       onRefetch();
     },
     onError: () => toast.error("Ошибка изменения цвета"),
