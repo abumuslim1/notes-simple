@@ -146,6 +146,7 @@ export const tasks = mysqlTable("tasks", {
   columnId: int("columnId").notNull().references(() => taskBoardColumns.id, { onDelete: "cascade" }),
   title: varchar("title", { length: 500 }).notNull(),
   description: text("description"),
+  priority: mysqlEnum("priority", ["low", "medium", "high"]).default("medium"),
   assignedToUserId: int("assignedToUserId").references(() => users.id, { onDelete: "set null" }),
   dueDate: timestamp("dueDate"),
   position: int("position").default(0).notNull(),
@@ -169,3 +170,14 @@ export const taskFiles = mysqlTable("taskFiles", {
 
 export type TaskFile = typeof taskFiles.$inferSelect;
 export type InsertTaskFile = typeof taskFiles.$inferInsert;
+
+// taskTags table already exists in the database
+export const taskTags = mysqlTable("taskTags", {
+  id: int("id").autoincrement().primaryKey(),
+  taskId: int("taskId").notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  tag: varchar("tag", { length: 100 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TaskTag = typeof taskTags.$inferSelect;
+export type InsertTaskTag = typeof taskTags.$inferInsert;

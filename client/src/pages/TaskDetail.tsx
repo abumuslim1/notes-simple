@@ -2,18 +2,26 @@ import { useState } from "react";
 import { useRoute, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Trash2, Edit2, X, Check } from "lucide-react";
 import { toast } from "sonner";
 
 export default function TaskDetail() {
   const [, params] = useRoute("/task/:id");
   const [, setLocation] = useLocation();
   const taskId = params?.id ? parseInt(params.id) : null;
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState<any>(null);
 
-  const { data: task, isLoading, error } = trpc.tasks.getTaskById.useQuery(
+  const { data: task, isLoading, error, refetch } = trpc.tasks.getTaskById.useQuery(
     { id: taskId! },
     { enabled: !!taskId }
   );
+
+  const { data: column } = trpc.tasks.getColumns.useQuery(undefined, {
+    enabled: !!task,
+  });
 
   const deleteTaskMutation = trpc.tasks.deleteTask.useMutation({
     onSuccess: () => {
@@ -21,6 +29,15 @@ export default function TaskDetail() {
       setLocation("/tasks");
     },
     onError: () => toast.error("Ошибка удаления задачи"),
+  });
+
+  const updateTaskMutation = trpc.tasks.updateTask.useMutation({
+    onSuccess: () => {
+      toast.success("Задача обновлена");
+      setIsEditing(false);
+      refetch();
+    },
+    onError: () => toast.error("Ошибка обновления задачи"),
   });
 
   if (!taskId) {
@@ -47,6 +64,130 @@ export default function TaskDetail() {
     );
   }
 
+  const currentColumn = column?.find((c: any) => c.id === task.columnId);
+
+  const priorityColors: Record<string, string> = {
+    high: "bg-red-100 text-red-800",
+    medium: "bg-yellow-100 text-yellow-800",
+    low: "bg-green-100 text-green-800",
+  };
+
+  const priorityLabels: Record<string, string> = {
+    high: "Высокий",
+    medium: "Средний",
+    low: "Низкий",
+  };
+
+  const handleEdit = () => {
+    setEditData({
+      id: task.id,
+      title: task.title,
+      description: task.description || "",
+      priority: task.priority || "medium",
+      dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : "",
+      assignedToUserId: task.assignedToUserId || "",
+    });
+    setIsEditing(true);
+  };
+
+  const handleSave = () => {
+    updateTaskMutation.mutate({
+      id: editData.id,
+      title: editData.title,
+      description: editData.description || undefined,
+      priority: editData.priority,
+      dueDate: editData.dueDate || undefined,
+      assignedToUserId: editData.assignedToUserId ? parseInt(editData.assignedToUserId) : undefined,
+    });
+  };
+
+  if (isEditing && editData) {
+    return (
+      <div className="h-full flex flex-col bg-white">
+        <div className="border-b px-6 py-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-gray-900">Редактирование задачи</h1>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditing(false)}
+              >
+                <X className="w-4 h-4 mr-2" />
+                Отмена
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={updateTaskMutation.isPending}
+              >
+                <Check className="w-4 h-4 mr-2" />
+                Сохранить
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="max-w-2xl space-y-6">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Название</label>
+              <Input
+                value={editData.title}
+                onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                placeholder="Название задачи"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Описание</label>
+              <Textarea
+                value={editData.description}
+                onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                placeholder="Описание задачи"
+                rows={4}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Приоритет</label>
+                <select
+                  value={editData.priority}
+                  onChange={(e) => setEditData({ ...editData, priority: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="low">Низкий</option>
+                  <option value="medium">Средний</option>
+                  <option value="high">Высокий</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Крайний срок</label>
+                <Input
+                  type="date"
+                  value={editData.dueDate}
+                  onChange={(e) => setEditData({ ...editData, dueDate: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Исполнитель (ID)</label>
+              <Input
+                type="number"
+                value={editData.assignedToUserId}
+                onChange={(e) => setEditData({ ...editData, assignedToUserId: e.target.value })}
+                placeholder="ID пользователя"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex flex-col bg-white">
       <div className="border-b px-6 py-4">
@@ -62,19 +203,42 @@ export default function TaskDetail() {
             </Button>
             <h1 className="text-2xl font-bold text-gray-900">{task.title}</h1>
           </div>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => deleteTaskMutation.mutate({ id: task.id })}
-          >
-            <Trash2 className="w-4 h-4 mr-2" />
-            Удалить
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleEdit}
+            >
+              <Edit2 className="w-4 h-4 mr-2" />
+              Редактировать
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => deleteTaskMutation.mutate({ id: task.id })}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Удалить
+            </Button>
+          </div>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-2xl">
+          {currentColumn && (
+            <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h2 className="text-sm font-semibold text-gray-700 mb-2">Столбец</h2>
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-4 h-4 rounded"
+                  style={{ backgroundColor: currentColumn.color }}
+                />
+                <p className="text-gray-600 font-medium">{currentColumn.name}</p>
+              </div>
+            </div>
+          )}
+
           {task.description && (
             <div className="mb-6">
               <h2 className="text-sm font-semibold text-gray-700 mb-2">Описание</h2>
@@ -83,20 +247,29 @@ export default function TaskDetail() {
           )}
 
           <div className="grid grid-cols-2 gap-6 mb-6">
+            {task.priority && (
+              <div>
+                <h2 className="text-sm font-semibold text-gray-700 mb-2">Приоритет</h2>
+                <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${priorityColors[task.priority] || "bg-gray-100 text-gray-800"}`}>
+                  {priorityLabels[task.priority] || task.priority}
+                </span>
+              </div>
+            )}
+
             {task.dueDate && (
               <div>
                 <h2 className="text-sm font-semibold text-gray-700 mb-2">Крайний срок</h2>
                 <p className="text-gray-600">{new Date(task.dueDate).toLocaleDateString("ru-RU")}</p>
               </div>
             )}
-
-            {task.assignedToUserId && (
-              <div>
-                <h2 className="text-sm font-semibold text-gray-700 mb-2">Исполнитель</h2>
-                <p className="text-gray-600">Пользователь #{task.assignedToUserId}</p>
-              </div>
-            )}
           </div>
+
+          {task.assignedToUserId && (
+            <div className="mb-6">
+              <h2 className="text-sm font-semibold text-gray-700 mb-2">Исполнитель</h2>
+              <p className="text-gray-600">Пользователь #{task.assignedToUserId}</p>
+            </div>
+          )}
 
           <div className="border-t pt-6 text-xs text-gray-500">
             <p>Создано: {new Date(task.createdAt).toLocaleString("ru-RU")}</p>

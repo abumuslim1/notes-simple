@@ -1,6 +1,6 @@
 import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, folders, notes, noteVersions, noteFiles, noteTags, licenses, taskBoardColumns, tasks, taskFiles, InsertFolder, InsertNote, InsertNoteVersion, InsertNoteFile, InsertNoteTag, InsertTaskBoardColumn, InsertTask, InsertTaskFile } from "../drizzle/schema";
+import { InsertUser, users, folders, notes, noteVersions, noteFiles, noteTags, licenses, taskBoardColumns, tasks, taskFiles, taskTags, InsertFolder, InsertNote, InsertNoteVersion, InsertNoteFile, InsertNoteTag, InsertTaskBoardColumn, InsertTask, InsertTaskFile, InsertTaskTag } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -466,4 +466,22 @@ export async function updateNotePassword(id: number, passwordHash: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   return db.update(notes).set({ passwordHash }).where(eq(notes.id, id));
+}
+
+export async function addTaskTag(taskId: number, tag: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.insert(taskTags).values({ taskId, tag });
+}
+
+export async function getTaskTags(taskId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.select({ tag: taskTags.tag }).from(taskTags).where(eq(taskTags.taskId, taskId));
+}
+
+export async function deleteTaskTag(taskId: number, tag: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.delete(taskTags).where(and(eq(taskTags.taskId, taskId), eq(taskTags.tag, tag)));
 }
