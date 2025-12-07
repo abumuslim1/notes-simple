@@ -17,7 +17,6 @@ import Users from "./pages/Users";
 import License from "./pages/License";
 import Settings from "./pages/Settings";
 import Tasks from "./pages/Tasks";
-import TaskDetail from "./pages/TaskDetail";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { Loader2 } from "lucide-react";
@@ -77,12 +76,6 @@ function Router() {
       <Route path="/tasks">
         <AuthenticatedLayout>
           <Tasks />
-        </AuthenticatedLayout>
-      </Route>
-      
-      <Route path="/task/:id">
-        <AuthenticatedLayout>
-          <TaskDetail />
         </AuthenticatedLayout>
       </Route>
       
