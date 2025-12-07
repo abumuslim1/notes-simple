@@ -147,6 +147,7 @@ export const tasks = mysqlTable("tasks", {
   title: varchar("title", { length: 500 }).notNull(),
   description: text("description"),
   assignedToUserId: int("assignedToUserId").references(() => users.id, { onDelete: "set null" }),
+  priority: mysqlEnum("priority", ["low", "medium", "high"]).default("medium").notNull(),
   dueDate: timestamp("dueDate"),
   position: int("position").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -155,6 +156,19 @@ export const tasks = mysqlTable("tasks", {
 
 export type Task = typeof tasks.$inferSelect;
 export type InsertTask = typeof tasks.$inferInsert;
+
+/**
+ * Task tags for organization
+ */
+export const taskTags = mysqlTable("taskTags", {
+  id: int("id").autoincrement().primaryKey(),
+  taskId: int("taskId").notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  tag: varchar("tag", { length: 100 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TaskTag = typeof taskTags.$inferSelect;
+export type InsertTaskTag = typeof taskTags.$inferInsert;
 
 export const taskFiles = mysqlTable("taskFiles", {
   id: int("id").autoincrement().primaryKey(),

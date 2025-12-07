@@ -1,6 +1,6 @@
 import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, folders, notes, noteVersions, noteFiles, noteTags, licenses, taskBoardColumns, tasks, taskFiles, InsertFolder, InsertNote, InsertNoteVersion, InsertNoteFile, InsertNoteTag, InsertTaskBoardColumn, InsertTask, InsertTaskFile } from "../drizzle/schema";
+import { InsertUser, users, folders, notes, noteVersions, noteFiles, noteTags, licenses, taskBoardColumns, tasks, taskFiles, taskTags, InsertFolder, InsertNote, InsertNoteVersion, InsertNoteFile, InsertNoteTag, InsertTaskBoardColumn, InsertTask, InsertTaskFile, InsertTaskTag } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -281,26 +281,57 @@ export async function createTask(data: {
   columnId: number;
   title: string;
   description?: string;
+  priority?: "low" | "medium" | "high";
   assignedToUserId?: number;
   dueDate?: Date;
   position: number;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result: any = await db.insert(tasks).values(data);
+  const result: any = await db.insert(tasks).values({
+    ...data,
+    priority: data.priority || "medium",
+  });
   return result[0].insertId;
 }
 
 export async function getTasksByColumnId(columnId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.select().from(tasks).where(eq(tasks.columnId, columnId)).orderBy(tasks.position);
+  const taskList = await db.select().from(tasks).where(eq(tasks.columnId, columnId)).orderBy(tasks.position);
+  
+  // Fetch tags for each task
+  const result = await Promise.all(
+    taskList.map(async (task) => {
+      const tags = await db.select().from(taskTags).where(eq(taskTags.taskId, task.id));
+      return {
+        ...task,
+        tags: tags.map(t => t.tag),
+      };
+    })
+  );
+  return result;
 }
 
 export async function getTaskById(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.select().from(tasks).where(eq(tasks.id, id)).then(r => r[0] || null);
+  const task = await db.select().from(tasks).where(eq(tasks.id, id)).then(r => r[0] || null);
+  
+  if (!task) return null;
+  
+  // Fetch tags for this task
+  const tags = await db.select().from(taskTags).where(eq(taskTags.taskId, id));
+  return {
+    ...task,
+    tags: tags.map(t => t.tag),
+  };
+}
+
+export async function addTaskTag(taskId: number, tag: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(taskTags).values({ taskId, tag });
 }
 
 export async function updateTask(
@@ -308,6 +339,7 @@ export async function updateTask(
   data: Partial<{
     title: string;
     description: string;
+    priority: "low" | "medium" | "high";
     assignedToUserId: number;
     dueDate: Date;
   }>

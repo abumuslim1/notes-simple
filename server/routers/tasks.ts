@@ -58,18 +58,29 @@ export const tasksRouter = router({
         columnId: z.number(),
         title: z.string(),
         description: z.string().optional(),
+        priority: z.enum(["low", "medium", "high"]).optional(),
         assignedToUserId: z.number().optional(),
         dueDate: z.string().optional(),
         position: z.number(),
+        tags: z.array(z.string()).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { dueDate, ...rest } = input;
+      const { dueDate, tags, priority, ...rest } = input;
       const id = await db.createTask({
         userId: ctx.user.id,
         ...rest,
+        priority: priority || "medium",
         dueDate: dueDate ? new Date(dueDate) : undefined,
       });
+      
+      // Add tags if provided
+      if (tags && tags.length > 0) {
+        for (const tag of tags) {
+          await db.addTaskTag(id, tag);
+        }
+      }
+      
       return { id };
     }),
 
@@ -79,8 +90,10 @@ export const tasksRouter = router({
         id: z.number(),
         title: z.string().optional(),
         description: z.string().optional(),
+        priority: z.enum(["low", "medium", "high"]).optional(),
         assignedToUserId: z.number().optional(),
         dueDate: z.string().optional(),
+        tags: z.array(z.string()).optional(),
       })
     )
     .mutation(async ({ input }) => {
