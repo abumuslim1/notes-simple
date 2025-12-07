@@ -258,12 +258,12 @@ function TaskColumn({ column, onDelete, onRefetch }: any) {
   const [columnColor, setColumnColor] = useState(column.color);
   const [isEditingColor, setIsEditingColor] = useState(false);
 
-  const { data: tasks = [] } = trpc.tasks.getTasksByColumnId.useQuery(
+  const { data: tasks = [] } = trpc.tasks.getTasksByColumn.useQuery(
     { columnId: column.id },
     { enabled: !!column.id }
   );
 
-  const { data: users = [] } = trpc.tasks.getAllUsers.useQuery();
+  const { data: users = [] } = trpc.tasks.getUsers.useQuery();
 
   const createTaskMutation = trpc.tasks.createTask.useMutation({
     onSuccess: () => {
@@ -308,6 +308,7 @@ function TaskColumn({ column, onDelete, onRefetch }: any) {
       dueDate: newTaskDueDate || undefined,
       assignedToUserId: newTaskAssignee ? parseInt(newTaskAssignee) : undefined,
       tags,
+      position: tasks.length,
     });
   };
 
@@ -418,9 +419,9 @@ function TaskColumn({ column, onDelete, onRefetch }: any) {
                               {priorityLabels[task.priority] || task.priority}
                             </span>
                           )}
-                          {task.tags && task.tags.length > 0 && (
+                          {task.tags && Array.isArray(task.tags) && task.tags.length > 0 && (
                             <div className="flex gap-1 flex-wrap">
-                              {task.tags.map((tag: string) => (
+                              {task.tags.map((tag: any) => (
                                 <span
                                   key={tag}
                                   className="inline-block px-2 py-1 rounded text-xs bg-gray-100 text-gray-700"
@@ -437,9 +438,9 @@ function TaskColumn({ column, onDelete, onRefetch }: any) {
                           </p>
                         )}
 
-                        {task.assignee && (
+                        {task.assignedToUserId && (
                           <p className="text-xs text-gray-500">
-                            Исполнитель: {task.assignee.name || task.assignee.username}
+                            Исполнитель: {users.find((u: any) => u.id === task.assignedToUserId)?.name || users.find((u: any) => u.id === task.assignedToUserId)?.username}
                           </p>
                         )}
                       </div>

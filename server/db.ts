@@ -313,14 +313,20 @@ export async function getTasksByColumnId(columnId: number) {
   if (!db) throw new Error("Database not available");
   const tasksList = await db.select().from(tasks).where(eq(tasks.columnId, columnId)).orderBy(tasks.position);
   
-  // Enrich tasks with assignee info
+  // Enrich tasks with assignee info and tags
   const enrichedTasks = await Promise.all(
     tasksList.map(async (task) => {
+      let assignee = null;
+      let tags: string[] = [];
+      
       if (task.assignedToUserId) {
-        const assignee = await db.select().from(users).where(eq(users.id, task.assignedToUserId)).then(r => r[0] || null);
-        return { ...task, assignee };
+        assignee = await db.select().from(users).where(eq(users.id, task.assignedToUserId)).then(r => r[0] || null);
       }
-      return task;
+      
+      const taskTagsList = await db.select().from(taskTags).where(eq(taskTags.taskId, task.id));
+      tags = taskTagsList.map((t: any) => t.tag);
+      
+      return { ...task, assignee, tags };
     })
   );
   return enrichedTasks;
