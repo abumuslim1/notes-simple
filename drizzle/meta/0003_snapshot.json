@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "d2df775f-2c7e-4108-a722-7b642bc24b60",
-  "prevId": "b4553f22-d4c8-490f-af40-a9714c2f2880",
+  "id": "b06ec37e-c479-45af-9807-d74b0ef9e781",
+  "prevId": "81b25b9d-be5f-4390-afdb-e3e4784bf491",
   "tables": {
     "folders": {
       "name": "folders",
@@ -186,14 +186,6 @@
           "notNull": true,
           "autoincrement": false,
           "default": 0
-        },
-        "allowPublicRegistration": {
-          "name": "allowPublicRegistration",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 1
         },
         "createdAt": {
           "name": "createdAt",
@@ -516,7 +508,7 @@
         },
         "color": {
           "name": "color",
-          "type": "varchar(50)",
+          "type": "varchar(20)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -527,8 +519,7 @@
           "type": "int",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": 0
+          "autoincrement": false
         },
         "createdAt": {
           "name": "createdAt",
@@ -549,261 +540,10 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {
-        "taskBoardColumns_userId_users_id_fk": {
-          "name": "taskBoardColumns_userId_users_id_fk",
-          "tableFrom": "taskBoardColumns",
-          "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {
         "taskBoardColumns_id": {
           "name": "taskBoardColumns_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraint": {}
-    },
-    "taskBoardColumnsArchive": {
-      "name": "taskBoardColumnsArchive",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "columnId": {
-          "name": "columnId",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "isArchived": {
-          "name": "isArchived",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
-        "archivedAt": {
-          "name": "archivedAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "taskBoardColumnsArchive_columnId_taskBoardColumns_id_fk": {
-          "name": "taskBoardColumnsArchive_columnId_taskBoardColumns_id_fk",
-          "tableFrom": "taskBoardColumnsArchive",
-          "tableTo": "taskBoardColumns",
-          "columnsFrom": [
-            "columnId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "taskBoardColumnsArchive_id": {
-          "name": "taskBoardColumnsArchive_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraint": {}
-    },
-    "taskCommentFiles": {
-      "name": "taskCommentFiles",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "commentId": {
-          "name": "commentId",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "fileName": {
-          "name": "fileName",
-          "type": "varchar(500)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "fileKey": {
-          "name": "fileKey",
-          "type": "varchar(500)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "fileUrl": {
-          "name": "fileUrl",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "fileSize": {
-          "name": "fileSize",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "mimeType": {
-          "name": "mimeType",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "taskCommentFiles_commentId_taskComments_id_fk": {
-          "name": "taskCommentFiles_commentId_taskComments_id_fk",
-          "tableFrom": "taskCommentFiles",
-          "tableTo": "taskComments",
-          "columnsFrom": [
-            "commentId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "taskCommentFiles_id": {
-          "name": "taskCommentFiles_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraint": {}
-    },
-    "taskComments": {
-      "name": "taskComments",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "taskId": {
-          "name": "taskId",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "userId": {
-          "name": "userId",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "content": {
-          "name": "content",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
-        },
-        "updatedAt": {
-          "name": "updatedAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "onUpdate": true,
-          "default": "(now())"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "taskComments_taskId_tasks_id_fk": {
-          "name": "taskComments_taskId_tasks_id_fk",
-          "tableFrom": "taskComments",
-          "tableTo": "tasks",
-          "columnsFrom": [
-            "taskId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "taskComments_userId_users_id_fk": {
-          "name": "taskComments_userId_users_id_fk",
-          "tableFrom": "taskComments",
-          "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "taskComments_id": {
-          "name": "taskComments_id",
           "columns": [
             "id"
           ]
@@ -900,66 +640,6 @@
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
-    "taskTags": {
-      "name": "taskTags",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "taskId": {
-          "name": "taskId",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "tag": {
-          "name": "tag",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "taskTags_taskId_tasks_id_fk": {
-          "name": "taskTags_taskId_tasks_id_fk",
-          "tableFrom": "taskTags",
-          "tableTo": "tasks",
-          "columnsFrom": [
-            "taskId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "taskTags_id": {
-          "name": "taskTags_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraint": {}
-    },
     "tasks": {
       "name": "tasks",
       "columns": {
@@ -998,14 +678,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "priority": {
-          "name": "priority",
-          "type": "enum('low','medium','high')",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "'medium'"
-        },
         "assignedToUserId": {
           "name": "assignedToUserId",
           "type": "int",
@@ -1025,8 +697,7 @@
           "type": "int",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": 0
+          "autoincrement": false
         },
         "createdAt": {
           "name": "createdAt",
@@ -1048,19 +719,6 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "tasks_userId_users_id_fk": {
-          "name": "tasks_userId_users_id_fk",
-          "tableFrom": "tasks",
-          "tableTo": "users",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
         "tasks_columnId_taskBoardColumns_id_fk": {
           "name": "tasks_columnId_taskBoardColumns_id_fk",
           "tableFrom": "tasks",
@@ -1072,19 +730,6 @@
             "id"
           ],
           "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "tasks_assignedToUserId_users_id_fk": {
-          "name": "tasks_assignedToUserId_users_id_fk",
-          "tableFrom": "tasks",
-          "tableTo": "users",
-          "columnsFrom": [
-            "assignedToUserId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -1109,16 +754,9 @@
           "notNull": true,
           "autoincrement": true
         },
-        "username": {
-          "name": "username",
+        "openId": {
+          "name": "openId",
           "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "passwordHash": {
-          "name": "passwordHash",
-          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -1127,12 +765,19 @@
           "name": "name",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "email": {
           "name": "email",
           "type": "varchar(320)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "loginMethod": {
+          "name": "loginMethod",
+          "type": "varchar(64)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -1182,10 +827,10 @@
         }
       },
       "uniqueConstraints": {
-        "users_username_unique": {
-          "name": "users_username_unique",
+        "users_openId_unique": {
+          "name": "users_openId_unique",
           "columns": [
-            "username"
+            "openId"
           ]
         }
       },
