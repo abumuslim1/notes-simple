@@ -157,3 +157,9 @@
 - [x] Add archive functionality for columns (procedures added)
 - [x] Test all new features (35 tests passing)
 - [ ] Create checkpoint with new features
+
+## Registration Fix
+- [x] Enable registration in license settings
+- [x] Add registration UI to login page
+- [x] Test registration flow (35 tests passing)
+- [ ] Create checkpoint with registration enabled
