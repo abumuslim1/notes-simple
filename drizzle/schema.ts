@@ -229,3 +229,19 @@ export const taskBoardColumnsArchive = mysqlTable("taskBoardColumnsArchive", {
 
 export type TaskBoardColumnArchive = typeof taskBoardColumnsArchive.$inferSelect;
 export type InsertTaskBoardColumnArchive = typeof taskBoardColumnsArchive.$inferInsert;
+
+
+/**
+ * Task status history for tracking changes
+ */
+export const taskStatusHistory = mysqlTable("taskStatusHistory", {
+  id: int("id").autoincrement().primaryKey(),
+  taskId: int("taskId").notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  oldStatus: mysqlEnum("oldStatus", ["pending", "completed"]).notNull(),
+  newStatus: mysqlEnum("newStatus", ["pending", "completed"]).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TaskStatusHistory = typeof taskStatusHistory.$inferSelect;
+export type InsertTaskStatusHistory = typeof taskStatusHistory.$inferInsert;

@@ -218,8 +218,15 @@ export const tasksRouter = router({
 
   updateTaskStatus: protectedProcedure
     .input(z.object({ id: z.number(), status: z.enum(["pending", "completed"]) }))
-    .mutation(async ({ input }) => {
-      await db.updateTaskStatus(input.id, input.status);
+    .mutation(async ({ ctx, input }) => {
+      await db.updateTaskStatus(input.id, input.status, ctx.user.id);
       return { success: true };
+    }),
+
+  getTaskStatusHistory: protectedProcedure
+    .input(z.object({ taskId: z.number() }))
+    .query(async ({ input }) => {
+      const history = await db.getTaskStatusHistory(input.taskId);
+      return history;
     }),
 });

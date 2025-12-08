@@ -17,6 +17,7 @@ export default function TaskDetail() {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [commentText, setCommentText] = useState("");
   const [commentFiles, setCommentFiles] = useState<File[]>([]);
+  const [showStatusHistory, setShowStatusHistory] = useState(false);
 
   const { data: task, isLoading, error, refetch } = trpc.tasks.getTaskById.useQuery(
     { id: taskId! },
@@ -30,6 +31,11 @@ export default function TaskDetail() {
   const { data: users = [] } = trpc.tasks.getUsers.useQuery();
 
   const { data: comments = [] } = trpc.tasks.getComments.useQuery(
+    { taskId: taskId! },
+    { enabled: !!taskId }
+  );
+
+  const { data: statusHistory = [] } = trpc.tasks.getTaskStatusHistory.useQuery(
     { taskId: taskId! },
     { enabled: !!taskId }
   );
@@ -71,6 +77,14 @@ export default function TaskDetail() {
       refetch();
     },
     onError: () => toast.error("Ошибка обновления задачи"),
+  });
+
+  const updateTaskStatusMutation = trpc.tasks.updateTaskStatus.useMutation({
+    onSuccess: () => {
+      toast.success("Статус задачи обновлен");
+      refetch();
+    },
+    onError: () => toast.error("Ошибка обновления статуса"),
   });
 
   const utils = trpc.useUtils();
@@ -428,7 +442,22 @@ export default function TaskDetail() {
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <h1 className="text-2xl font-bold text-gray-900">{task.title}</h1>
+            <input
+              type="checkbox"
+              checked={(task as any).status === "completed"}
+              onChange={(e) => {
+                updateTaskStatusMutation.mutate({
+                  id: task.id,
+                  status: (task as any).status === "completed" ? "pending" : "completed",
+                });
+              }}
+              className="w-5 h-5 cursor-pointer"
+            />
+            <h1 className={`text-2xl font-bold ${
+              (task as any).status === "completed"
+                ? "text-gray-400 line-through"
+                : "text-gray-900"
+            }`}>{task.title}</h1>
           </div>
           <div className="flex gap-2">
             <Button
@@ -662,11 +691,31 @@ export default function TaskDetail() {
             )}
           </div>
 
-          <div className="border-t pt-6 mt-6 text-xs text-gray-500">
-            <p>Создано: {new Date(task.createdAt).toLocaleString("ru-RU")}</p>
-            {task.updatedAt && (
-              <p>Обновлено: {new Date(task.updatedAt).toLocaleString("ru-RU")}</p>
+          <div className="border-t pt-6 mt-6">
+            <button
+              onClick={() => setShowStatusHistory(!showStatusHistory)}
+              className="text-sm font-semibold text-gray-700 mb-3 hover:text-gray-900"
+            >
+              {showStatusHistory ? "Скрыть" : "Показать"} историю изменения статуса
+            </button>
+            {showStatusHistory && statusHistory.length > 0 && (
+              <div className="space-y-2 mb-4 p-3 bg-gray-50 rounded border border-gray-200">
+                {statusHistory.map((entry: any) => (
+                  <div key={entry.id} className="text-xs text-gray-600">
+                    <p>
+                      <span className="font-semibold">{users.find(u => u.id === entry.userId)?.name || users.find(u => u.id === entry.userId)?.username || "Unknown"}</span>
+                      {" "}изменил статус с "{entry.oldStatus === 'pending' ? 'В работе' : 'Завершена'}" на "{entry.newStatus === 'pending' ? 'В работе' : 'Завершена'}" {new Date(entry.createdAt).toLocaleString("ru-RU")}
+                    </p>
+                  </div>
+                ))}
+              </div>
             )}
+            <div className="text-xs text-gray-500">
+              <p>Крейтано: {new Date(task.createdAt).toLocaleString("ru-RU")}</p>
+              {task.updatedAt && (
+                <p>Обновлено: {new Date(task.updatedAt).toLocaleString("ru-RU")}</p>
+              )}
+            </div>
           </div>
         </div>
       </div>

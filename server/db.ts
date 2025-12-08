@@ -1,6 +1,6 @@
 import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, folders, notes, noteVersions, noteFiles, noteTags, licenses, taskBoardColumns, tasks, taskFiles, taskTags, taskComments, taskCommentFiles, taskBoardColumnsArchive, InsertFolder, InsertNote, InsertNoteVersion, InsertNoteFile, InsertNoteTag, InsertTaskBoardColumn, InsertTask, InsertTaskFile, InsertTaskTag, InsertTaskComment, InsertTaskCommentFile, InsertTaskBoardColumnArchive } from "../drizzle/schema";
+import { InsertUser, users, folders, notes, noteVersions, noteFiles, noteTags, licenses, taskBoardColumns, tasks, taskFiles, taskTags, taskComments, taskCommentFiles, taskBoardColumnsArchive, taskStatusHistory, InsertFolder, InsertNote, InsertNoteVersion, InsertNoteFile, InsertNoteTag, InsertTaskBoardColumn, InsertTask, InsertTaskFile, InsertTaskTag, InsertTaskComment, InsertTaskCommentFile, InsertTaskBoardColumnArchive, InsertTaskStatusHistory } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -298,10 +298,34 @@ export async function moveTask(taskId: number, columnId: number, position: numbe
   return db.update(tasks).set({ columnId, position }).where(eq(tasks.id, taskId));
 }
 
-export async function updateTaskStatus(id: number, status: "pending" | "completed") {
+export async function updateTaskStatus(id: number, status: "pending" | "completed", userId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.update(tasks).set({ status }).where(eq(tasks.id, id));
+  
+  // Get current task to find old status
+  const currentTask = await db.select().from(tasks).where(eq(tasks.id, id)).then(r => r[0]);
+  if (!currentTask) throw new Error("Task not found");
+  
+  // Update task status
+  await db.update(tasks).set({ status }).where(eq(tasks.id, id));
+  
+  // Log status change if userId provided
+  if (userId && currentTask.status !== status) {
+    await db.insert(taskStatusHistory).values({
+      taskId: id,
+      userId,
+      oldStatus: currentTask.status as "pending" | "completed",
+      newStatus: status,
+    });
+  }
+}
+
+export async function getTaskStatusHistory(taskId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.select().from(taskStatusHistory)
+    .where(eq(taskStatusHistory.taskId, taskId))
+    .orderBy(desc(taskStatusHistory.createdAt));
 }
 
 // Task files
