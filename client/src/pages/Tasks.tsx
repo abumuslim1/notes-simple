@@ -415,7 +415,25 @@ function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFil
   const utils = trpc.useUtils();
 
   const createTaskMutation = trpc.tasks.createTask.useMutation({
-    onSuccess: () => {
+    onSuccess: async (newTask) => {
+      if (taskFiles.length > 0) {
+        try {
+          for (const file of taskFiles) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('taskId', newTask.toString());
+            const response = await fetch('/api/upload-task-file', {
+              method: 'POST',
+              body: formData,
+            });
+            if (!response.ok) throw new Error('Failed to upload file');
+          }
+        } catch (error) {
+          console.error('Error uploading files:', error);
+          toast.error('Ошибка при загрузке файлов');
+        }
+      }
+      
       toast.success("Задача создана");
       setNewTaskTitle("");
       setNewTaskDescription("");
@@ -423,8 +441,8 @@ function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFil
       setNewTaskDueDate("");
       setNewTaskAssignee("");
       setNewTaskTags("");
+      setTaskFiles([]);
       setIsAddingTask(false);
-      // Invalidate the query to refetch tasks
       utils.tasks.getTasksByColumn.invalidate({ columnId: column.id });
       onRefetch();
     },
