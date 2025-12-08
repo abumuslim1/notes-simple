@@ -23,6 +23,8 @@ export default function Tasks() {
   const [dateFilter, setDateFilter] = useState<{from?: string, to?: string}>({});
   const [sortBy, setSortBy] = useState<"createdAt" | "dueDate" | "priority">("createdAt");
   const [assigneeFilter, setAssigneeFilter] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "completed">("all");
+  const [hideCompleted, setHideCompleted] = useState(false);
 
   const utils = trpc.useUtils();
   const { data: columns = [], refetch: refetchColumns } = trpc.tasks.getColumns.useQuery();
@@ -58,6 +60,14 @@ export default function Tasks() {
       utils.tasks.getTasksByColumn.invalidate();
     },
     onError: () => toast.error("Ошибка перемещения задачи"),
+  });
+
+  const updateTaskStatusMutation = trpc.tasks.updateTaskStatus.useMutation({
+    onSuccess: () => {
+      utils.tasks.getTasksByColumn.invalidate();
+      toast.success("Статус задачи обновлен");
+    },
+    onError: () => toast.error("Ошибка обновления статуса задачи"),
   });
 
   const handleCreateColumn = () => {
@@ -224,7 +234,25 @@ export default function Tasks() {
                     </option>
                   ))}
                 </select>
-                {(searchQuery || priorityFilter || dateFilter.from || dateFilter.to || assigneeFilter) && (
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as "all" | "pending" | "completed")}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="all">Все статусы</option>
+                  <option value="pending">В работе</option>
+                  <option value="completed">Завершена</option>
+                </select>
+                <label className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={hideCompleted}
+                    onChange={(e) => setHideCompleted(e.target.checked)}
+                    className="cursor-pointer"
+                  />
+                  <span className="text-sm">Скрыть завершенные</span>
+                </label>
+                {(searchQuery || priorityFilter || dateFilter.from || dateFilter.to || assigneeFilter || statusFilter !== "all" || hideCompleted) && (
               <Button
                 variant="outline"
                 size="sm"
@@ -233,6 +261,8 @@ export default function Tasks() {
                   setPriorityFilter(null);
                   setDateFilter({});
                   setAssigneeFilter(null);
+                  setStatusFilter("all");
+                  setHideCompleted(false);
                 }}
               >
                 Очистить
@@ -267,6 +297,8 @@ export default function Tasks() {
                           dateFilter={dateFilter}
                           sortBy={sortBy}
                           assigneeFilter={assigneeFilter}
+                          statusFilter={statusFilter}
+                          hideCompleted={hideCompleted}
                         />
                         {false && index === columns.length - 1 && (
                           <Dialog open={isColumnDialogOpen} onOpenChange={setIsColumnDialogOpen}>
@@ -340,7 +372,7 @@ export default function Tasks() {
 }
 
 // TaskColumn component
-function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFilter = null, dateFilter = {}, sortBy = "createdAt", assigneeFilter = null }: any) {
+function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFilter = null, dateFilter = {}, sortBy = "createdAt", assigneeFilter = null, statusFilter = "all", hideCompleted = false }: any) {
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDescription, setNewTaskDescription] = useState("");
@@ -387,6 +419,14 @@ function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFil
       }
     }
     
+    // Status filter
+    if (hideCompleted && (task as any).status === "completed") {
+      return false;
+    }
+    if (statusFilter !== "all" && (task as any).status !== statusFilter) {
+      return false;
+    }
+    
     return true;
   });
 
@@ -412,6 +452,14 @@ function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFil
   const { data: users = [] } = trpc.tasks.getUsers.useQuery();
 
   const utils = trpc.useUtils();
+
+  const updateTaskStatusMutation = trpc.tasks.updateTaskStatus.useMutation({
+    onSuccess: () => {
+      utils.tasks.getTasksByColumn.invalidate();
+      toast.success("Статус задачи обновлен");
+    },
+    onError: () => toast.error("Ошибка обновления статуса задачи"),
+  });
 
   const createTaskMutation = trpc.tasks.createTask.useMutation({
     onSuccess: () => {
@@ -579,45 +627,65 @@ function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFil
                         ref={provided.innerRef}
                         {...provided.draggableProps}
                         {...provided.dragHandleProps}
-                        onClick={() => {
-                          window.location.href = `/task/${task.id}`;
-                        }}
                         className={`p-3 bg-white border border-gray-200 rounded cursor-pointer hover:shadow-md transition-shadow ${
                           snapshot.isDragging ? "opacity-50" : ""
-                        }`}
+                        } ${(task as any).status === "completed" ? "bg-gray-100 opacity-60" : ""}`}
                       >
-                        <h3 className="font-semibold text-sm text-gray-900 mb-2">
-                          {task.title}
-                        </h3>
-                        {task.description && (
-                          <div className="text-xs text-gray-600 mb-2 line-clamp-2 [&_h1]:text-xs [&_h1]:font-bold [&_h1]:my-0 [&_h2]:text-xs [&_h2]:font-bold [&_h2]:my-0 [&_h3]:text-xs [&_h3]:font-bold [&_h3]:my-0 [&_p]:my-0 [&_ul]:list-disc [&_ul]:ml-3 [&_ol]:list-decimal [&_ol]:ml-3 [&_li]:my-0 [&_strong]:font-bold [&_em]:italic [&_code]:bg-gray-100 [&_code]:px-0.5 [&_code]:rounded [&_pre]:bg-gray-100 [&_pre]:p-1 [&_pre]:rounded [&_blockquote]:border-l-2 [&_blockquote]:border-gray-300 [&_blockquote]:pl-2 [&_blockquote]:italic"
-                            dangerouslySetInnerHTML={{ __html: task.description }}
+                        <div className="flex items-start gap-2 mb-2">
+                          <input
+                            type="checkbox"
+                            checked={(task as any).status === "completed"}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              updateTaskStatusMutation.mutate({
+                                id: task.id,
+                                status: (task as any).status === "completed" ? "pending" : "completed",
+                              });
+                            }}
+                            className="mt-0.5 cursor-pointer"
                           />
-                        )}
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {task.priority && (
-                            <span
-                              className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                                priorityColors[task.priority] ||
-                                "bg-gray-100 text-gray-800"
-                              }`}
-                            >
-                              {priorityLabels[task.priority] || task.priority}
-                            </span>
-                          )}
+                          <div
+                            onClick={() => {
+                              window.location.href = `/task/${task.id}`;
+                            }}
+                            className="flex-1"
+                          >
+                            <h3 className={`font-semibold text-sm mb-2 ${
+                              (task as any).status === "completed" ? "text-gray-500 line-through" : "text-gray-900"
+                            }`}>
+                              {task.title}
+                            </h3>
+                            {task.description && (
+                              <div className="text-xs text-gray-600 mb-2 line-clamp-2 [&_h1]:text-xs [&_h1]:font-bold [&_h1]:my-0 [&_h2]:text-xs [&_h2]:font-bold [&_h2]:my-0 [&_h3]:text-xs [&_h3]:font-bold [&_h3]:my-0 [&_p]:my-0 [&_ul]:list-disc [&_ul]:ml-3 [&_ol]:list-decimal [&_ol]:ml-3 [&_li]:my-0 [&_strong]:font-bold [&_em]:italic [&_code]:bg-gray-100 [&_code]:px-0.5 [&_code]:rounded [&_pre]:bg-gray-100 [&_pre]:p-1 [&_pre]:rounded [&_blockquote]:border-l-2 [&_blockquote]:border-gray-300 [&_blockquote]:pl-2 [&_blockquote]:italic"
+                                dangerouslySetInnerHTML={{ __html: task.description }}
+                              />
+                            )}
+                            <div className="flex flex-wrap gap-2 mb-2">
+                              {task.priority && (
+                                <span
+                                  className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                                    priorityColors[task.priority] ||
+                                    "bg-gray-100 text-gray-800"
+                                  }`}
+                                >
+                                  {priorityLabels[task.priority] || task.priority}
+                                </span>
+                              )}
 
+                            </div>
+                            {task.dueDate && (
+                              <p className="text-xs text-gray-500">
+                                {new Date(task.dueDate).toLocaleDateString("ru-RU")}
+                              </p>
+                            )}
+
+                            {task.assignedToUserId && (
+                              <p className="text-xs text-gray-500">
+                                Исполнитель: {users.find((u: any) => u.id === task.assignedToUserId)?.name || users.find((u: any) => u.id === task.assignedToUserId)?.username}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        {task.dueDate && (
-                          <p className="text-xs text-gray-500">
-                            {new Date(task.dueDate).toLocaleDateString("ru-RU")}
-                          </p>
-                        )}
-
-                        {task.assignedToUserId && (
-                          <p className="text-xs text-gray-500">
-                            Исполнитель: {users.find((u: any) => u.id === task.assignedToUserId)?.name || users.find((u: any) => u.id === task.assignedToUserId)?.username}
-                          </p>
-                        )}
                       </div>
                     )}
                   </Draggable>

@@ -215,4 +215,11 @@ export const tasksRouter = router({
       await db.deleteTaskFile(input.id);
       return { success: true };
     }),
+
+  updateTaskStatus: protectedProcedure
+    .input(z.object({ id: z.number(), status: z.enum(["pending", "completed"]) }))
+    .mutation(async ({ input }) => {
+      await db.updateTaskStatus(input.id, input.status);
+      return { success: true };
+    }),
 });

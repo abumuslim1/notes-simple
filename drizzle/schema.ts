@@ -150,6 +150,7 @@ export const tasks = mysqlTable("tasks", {
   assignedToUserId: int("assignedToUserId").references(() => users.id, { onDelete: "set null" }),
   dueDate: timestamp("dueDate"),
   position: int("position").default(0).notNull(),
+  status: mysqlEnum("status", ["pending", "completed"]).default("pending").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

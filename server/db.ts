@@ -298,6 +298,12 @@ export async function moveTask(taskId: number, columnId: number, position: numbe
   return db.update(tasks).set({ columnId, position }).where(eq(tasks.id, taskId));
 }
 
+export async function updateTaskStatus(id: number, status: "pending" | "completed") {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(tasks).set({ status }).where(eq(tasks.id, id));
+}
+
 // Task files
 export async function createTaskFile(data: InsertTaskFile): Promise<number> {
   const db = await getDb();
