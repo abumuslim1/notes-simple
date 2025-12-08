@@ -25,16 +25,11 @@ import { toast } from "sonner";
 export function NoteSidebar() {
   const [location] = useLocation();
   const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState("");
   const [newFolderName, setNewFolderName] = useState("");
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
 
   const { data: folders = [] } = trpc.folders.list.useQuery();
   const { data: notes = [] } = trpc.notes.list.useQuery();
-  const { data: suggestions = [] } = trpc.search.suggestions.useQuery(
-    { query: searchQuery },
-    { enabled: searchQuery.length > 0 }
-  );
 
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {
@@ -78,29 +73,7 @@ export function NoteSidebar() {
         </Link>
       </div>
 
-      {/* Search */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Поиск по заметкам и папкам"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 bg-gray-50 border-gray-200 text-sm rounded-lg"
-          />
-        </div>
-        
-        {/* Search suggestions */}
-        {suggestions.length > 0 && (
-          <div className="mt-2 bg-gray-50 rounded-md border border-gray-200 overflow-hidden">
-            {suggestions.map((suggestion, idx) => (
-              <div key={idx} className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm text-gray-700 border-b border-gray-100 last:border-0">
-                {suggestion}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+
 
       {/* Navigation */}
       <ScrollArea className="flex-1">

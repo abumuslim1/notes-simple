@@ -79,15 +79,28 @@ export default function TaskDetail() {
     onError: () => toast.error("Ошибка обновления задачи"),
   });
 
+  const utils = trpc.useUtils();
+
   const updateTaskStatusMutation = trpc.tasks.updateTaskStatus.useMutation({
+    onMutate: async (newStatus) => {
+      await utils.tasks.getTaskById.cancel({ id: taskId! });
+      const previousData = utils.tasks.getTaskById.getData({ id: taskId! });
+      utils.tasks.getTaskById.setData({ id: taskId! }, (old: any) => {
+        if (!old) return old;
+        return { ...old, status: newStatus.status };
+      });
+      return { previousData };
+    },
     onSuccess: () => {
       toast.success("Статус задачи обновлен");
-      refetch();
     },
-    onError: () => toast.error("Ошибка обновления статуса"),
+    onError: (err, newStatus, context: any) => {
+      if (context?.previousData) {
+        utils.tasks.getTaskById.setData({ id: taskId! }, context.previousData);
+      }
+      toast.error("Ошибка обновления статуса");
+    },
   });
-
-  const utils = trpc.useUtils();
   
   const addCommentMutation = trpc.tasks.addComment.useMutation({
     onMutate: async (newComment) => {

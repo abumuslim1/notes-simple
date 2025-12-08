@@ -1,12 +1,26 @@
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
-import { Star, Lock, FileText, Folder as FolderIcon, Edit2, Trash2, Plus } from "lucide-react";
+import { Star, Lock, FileText, Folder as FolderIcon, Edit2, Trash2, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
+import { useState } from "react";
 
 export default function Home() {
+  const [searchQuery, setSearchQuery] = useState("");
   const { data: notes = [], isLoading } = trpc.notes.list.useQuery();
   const { data: folders = [] } = trpc.folders.list.useQuery();
+  const { data: suggestions = [] } = trpc.search.suggestions.useQuery(
+    { query: searchQuery },
+    { enabled: searchQuery.length > 0 }
+  );
+
+  const filteredNotes = searchQuery.length > 0
+    ? notes.filter(note => 
+        note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        note.content.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : notes;
 
   const toggleFavoriteMutation = trpc.notes.toggleFavorite.useMutation({
     onMutate: async ({ noteId, isFavorite }) => {
@@ -66,6 +80,29 @@ export default function Home() {
         <p className="text-gray-600">Организуйте свои мысли в тенях, освещайте свои идеи</p>
       </div>
 
+      {/* Search */}
+      <div className="mb-8">
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Поиск по заметкам и папкам"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 bg-white border-gray-200 text-sm rounded-lg"
+          />
+        </div>
+        
+        {suggestions.length > 0 && (
+          <div className="mt-2 bg-white rounded-md border border-gray-200 overflow-hidden max-w-md">
+            {suggestions.map((suggestion, idx) => (
+              <div key={idx} className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm text-gray-700 border-b border-gray-100 last:border-0">
+                {suggestion}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Folders Section */}
       {folders.length > 0 && (
         <div className="mb-12">
@@ -102,7 +139,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {notes.map((note) => (
+            {filteredNotes.map((note) => (
               <Link key={note.id} href={`/note/${note.id}/view`}>
                 <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-all duration-300 cursor-pointer group h-full flex flex-col">
                   {/* Header */}
