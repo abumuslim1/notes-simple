@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../\_core/trpc";
 import * as db from "../db";
 
 export const tasksRouter = router({
@@ -178,7 +178,7 @@ export const tasksRouter = router({
     }),
 
   addCommentFile: protectedProcedure
-    .input(z.object({ commentId: z.number(), fileName: z.string(), fileKey: z.string(), fileUrl: z.string(), fileSize: z.number(), mimeType: z.string().optional() }))
+    .input(z.object({ commentId: z.number(), fileName: z.string(), fileKey: z.string(), fileUrl: z.string(), fileSize: z.number(), mimeType: z.string() }))
     .mutation(async ({ input }) => {
       const id = await db.addCommentFile(input);
       return { id };
@@ -201,4 +201,18 @@ export const tasksRouter = router({
   getArchivedColumns: protectedProcedure.query(async ({ ctx }) => {
     return db.getArchivedColumns(ctx.user.id);
   }),
+
+  addTaskFile: protectedProcedure
+    .input(z.object({ taskId: z.number(), fileName: z.string(), fileKey: z.string(), fileUrl: z.string(), fileSize: z.number(), mimeType: z.string() }))
+    .mutation(async ({ input }) => {
+      const id = await db.addTaskFile(input);
+      return { id };
+    }),
+
+  deleteTaskFile: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      await db.deleteTaskFile(input.id);
+      return { success: true };
+    }),
 });

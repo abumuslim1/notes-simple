@@ -127,6 +127,37 @@ export default function TaskDetail() {
     onError: () => toast.error("Ошибка удаления комментария"),
   });
 
+  const deleteCommentFileMutation = trpc.tasks.deleteCommentFile.useMutation({
+    onSuccess: () => {
+      toast.success("Файл удален");
+      // Refetch comment files
+      if (comments.length > 0) {
+        const fetchFiles = async () => {
+          const filesMap: Record<number, any[]> = {};
+          for (const comment of comments) {
+            try {
+              const files = await utils.tasks.getCommentFiles.fetch({ commentId: (comment as any).id });
+              filesMap[(comment as any).id] = files;
+            } catch (error) {
+              filesMap[(comment as any).id] = [];
+            }
+          }
+          setCommentFilesMap(filesMap);
+        };
+        fetchFiles();
+      }
+    },
+    onError: () => toast.error("Ошибка удаления файла"),
+  });
+
+  const deleteTaskFileMutation = trpc.tasks.deleteTaskFile.useMutation({
+    onSuccess: () => {
+      toast.success("Файл удален");
+      refetch();
+    },
+    onError: () => toast.error("Ошибка удаления файла"),
+  });
+
   if (!taskId) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -438,7 +469,10 @@ export default function TaskDetail() {
           {task.description && (
             <div className="mb-6">
               <h2 className="text-sm font-semibold text-gray-700 mb-2">Описание</h2>
-              <p className="text-gray-600 whitespace-pre-wrap">{task.description}</p>
+              <div 
+                className="text-gray-600 prose prose-sm max-w-none [&_h1]:text-xl [&_h1]:font-bold [&_h1]:my-2 [&_h2]:text-lg [&_h2]:font-bold [&_h2]:my-2 [&_h3]:text-base [&_h3]:font-bold [&_h3]:my-1 [&_p]:my-1 [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 [&_li]:my-1 [&_strong]:font-bold [&_em]:italic [&_code]:bg-gray-100 [&_code]:px-1 [&_code]:rounded [&_pre]:bg-gray-100 [&_pre]:p-2 [&_pre]:rounded [&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-4 [&_blockquote]:italic"
+                dangerouslySetInnerHTML={{ __html: task.description }}
+              />
             </div>
           )}
 
@@ -483,6 +517,15 @@ export default function TaskDetail() {
                     <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline flex-1 truncate">
                       {file.name || "Файл"}
                     </a>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => deleteTaskFileMutation.mutate({ id: file.id })}
+                      disabled={deleteTaskFileMutation.isPending}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
                   </li>
                 ))}
               </ul>
@@ -547,7 +590,6 @@ export default function TaskDetail() {
                   ))}
                 </div>
               )}
-              
               <Button
                 size="sm"
                 onClick={handleAddComment}
@@ -599,6 +641,15 @@ export default function TaskDetail() {
                             <span className="text-xs text-gray-500">
                               {file.size ? `${(file.size / 1024).toFixed(1)} KB` : ''}
                             </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => deleteCommentFileMutation.mutate({ id: file.id })}
+                              disabled={deleteCommentFileMutation.isPending}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
                           </div>
                         ))}
                       </div>

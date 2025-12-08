@@ -558,12 +558,7 @@ function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFil
           </div>
         )}
 
-        <button
-          onClick={() => onDelete()}
-          className="absolute top-2 right-2 text-gray-400 hover:text-red-500"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
