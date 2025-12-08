@@ -6,7 +6,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "./const";
 import { NoteSidebar } from "./components/NoteSidebar";
-import { TrialBanner } from "./components/TrialBanner";
+
 import Home from "./pages/Home";
 import NoteEditor from "./pages/NoteEditor";
 import NoteView from "./pages/NoteView";
@@ -42,7 +42,6 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen bg-background">
       <NoteSidebar />
       <div className="flex-1 flex flex-col">
-        <TrialBanner />
         <div className="flex-1 overflow-y-auto relative">
           {children}
         </div>

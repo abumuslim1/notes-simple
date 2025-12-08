@@ -184,6 +184,28 @@ export default function TaskDetail() {
       priority: editData.priority,
       dueDate: editData.dueDate || undefined,
       assignedToUserId: editData.assignedToUserId ? parseInt(editData.assignedToUserId) : undefined,
+    }, {
+      onSuccess: async () => {
+        if (uploadedFiles.length > 0) {
+          try {
+            for (const file of uploadedFiles) {
+              const formData = new FormData();
+              formData.append('file', file);
+              formData.append('taskId', editData.id.toString());
+              const response = await fetch('/api/upload-task-file', {
+                method: 'POST',
+                body: formData,
+              });
+              if (!response.ok) throw new Error('Failed to upload file');
+            }
+            setUploadedFiles([]);
+            refetch();
+          } catch (error) {
+            console.error('Error uploading files:', error);
+            toast.error('Ошибка при загрузке файлов');
+          }
+        }
+      }
     });
   };
 

@@ -348,6 +348,7 @@ function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFil
   const [newTaskDueDate, setNewTaskDueDate] = useState("");
   const [newTaskAssignee, setNewTaskAssignee] = useState("");
   const [newTaskTags, setNewTaskTags] = useState("");
+  const [taskFiles, setTaskFiles] = useState<File[]>([]);
   const [columnColor, setColumnColor] = useState(column.color);
   const [isEditingColor, setIsEditingColor] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -461,6 +462,7 @@ function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFil
       tags,
       position: allTasks.length,
     });
+    setTaskFiles([]);
   };
 
   const colorOptions = [
@@ -689,6 +691,36 @@ function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFil
               onChange={(e) => setNewTaskTags(e.target.value)}
               className="text-sm"
             />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Прикрепить файлы
+              </label>
+              <input
+                type="file"
+                multiple
+                onChange={(e) => {
+                  if (e.target.files) {
+                    setTaskFiles(Array.from(e.target.files));
+                  }
+                }}
+                className="block w-full text-sm text-gray-500"
+              />
+              {taskFiles.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {taskFiles.map((file, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                      <span className="truncate">{file.name}</span>
+                      <button
+                        onClick={() => setTaskFiles(taskFiles.filter((_, i) => i !== idx))}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        X
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             <div className="flex gap-2">
               <Button
                 onClick={handleCreateTask}

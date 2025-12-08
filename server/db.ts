@@ -320,6 +320,20 @@ export async function getTaskFiles(taskId: number) {
   }));
 }
 
+export async function addTaskFile(data: { taskId: number; fileName: string; fileKey: string; fileUrl: string; fileSize: number; mimeType: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result: any = await db.insert(taskFiles).values({
+    taskId: data.taskId,
+    fileName: data.fileName,
+    fileKey: data.fileKey,
+    fileUrl: data.fileUrl,
+    fileSize: data.fileSize,
+    mimeType: data.mimeType,
+  });
+  return result[0].insertId;
+}
+
 export async function deleteTaskFile(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

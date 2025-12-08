@@ -15,7 +15,6 @@ import {
   Key,
   Users,
   FolderPlus,
-  Lock,
   LogOut,
   Settings,
   CheckSquare,
@@ -265,21 +264,6 @@ export function NoteSidebar() {
                 >
                   <Users className="mr-2 h-4 w-4" />
                   Пользователи
-                </Button>
-              </Link>
-
-              {/* License */}
-              <Link href="/license">
-                <Button
-                  variant="ghost"
-                  className={`w-full justify-start h-8 rounded-lg text-sm ${
-                    isActive("/license")
-                      ? "bg-blue-50 text-blue-600 hover:bg-blue-100"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  <Lock className="mr-2 h-4 w-4" />
-                  Лицензии
                 </Button>
               </Link>
 

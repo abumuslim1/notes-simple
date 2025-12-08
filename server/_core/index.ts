@@ -73,6 +73,39 @@ async function startServer() {
     }
   });
   
+  // File upload endpoint for task files
+  app.post('/api/upload-task-file', upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file provided' });
+      }
+      
+      const taskId = parseInt(req.body.taskId);
+      if (!taskId) {
+        return res.status(400).json({ error: 'Task ID required' });
+      }
+      
+      // Upload to S3
+      const fileKey = `tasks/${taskId}/${nanoid()}-${req.file.originalname}`;
+      const { url } = await storagePut(fileKey, req.file.buffer, req.file.mimetype);
+      
+      // Save to database
+      const fileId = await db.addTaskFile({
+        taskId,
+        fileName: req.file.originalname,
+        fileKey,
+        fileUrl: url,
+        fileSize: req.file.size,
+        mimeType: req.file.mimetype,
+      });
+      
+      res.json({ success: true, fileId, url });
+    } catch (error) {
+      console.error('Error uploading task file:', error);
+      res.status(500).json({ error: 'File upload failed' });
+    }
+  });
+  
   // Auth routes
   registerAuthRoutes(app);
   // tRPC API
@@ -96,7 +129,6 @@ async function startServer() {
   if (port !== preferredPort) {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
-
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
   });
