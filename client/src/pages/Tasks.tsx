@@ -63,11 +63,26 @@ export default function Tasks() {
   });
 
   const updateTaskStatusMutation = trpc.tasks.updateTaskStatus.useMutation({
+    onMutate: async (newStatus) => {
+      await utils.tasks.getTasksByColumn.cancel();
+      const previousData = utils.tasks.getTasksByColumn.getData();
+      utils.tasks.getTasksByColumn.setData({ columnId: 0 }, (old: any) => {
+        if (!old) return old;
+        return old.map((task: any) => 
+          task.id === newStatus.id ? { ...task, status: newStatus.status } : task
+        );
+      });
+      return { previousData };
+    },
     onSuccess: () => {
-      utils.tasks.getTasksByColumn.invalidate();
       toast.success("Статус задачи обновлен");
     },
-    onError: () => toast.error("Ошибка обновления статуса задачи"),
+    onError: (err, newStatus, context: any) => {
+      if (context?.previousData) {
+        utils.tasks.getTasksByColumn.setData({ columnId: 0 }, context.previousData);
+      }
+      toast.error("Ошибка обновления статуса задачи");
+    },
   });
 
   const handleCreateColumn = () => {
@@ -164,30 +179,15 @@ export default function Tasks() {
               </DialogContent>
             </Dialog>
           </div>
-          
-          {/* Board Statistics */}
-          <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200 flex gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-500"></div>
-              <span className="text-sm text-gray-600">Высокий приоритет</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-              <span className="text-sm text-gray-600">Средний приоритет</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-green-500"></div>
-              <span className="text-sm text-gray-600">Низкий приоритет</span>
-            </div>
-          </div>
+
           
           {/* Filters Panel */}
-          <div className="flex gap-4 items-center">
+          <div className="flex flex-wrap gap-2 md:gap-4 items-center">
             <Input
-              placeholder="Поиск по названию..."
+              placeholder="Поиск..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 max-w-xs"
+              className="flex-1 min-w-0 md:max-w-xs"
             />
             <select
               value={priorityFilter || ""}
@@ -204,15 +204,15 @@ export default function Tasks() {
               placeholder="От"
               value={dateFilter.from || ""}
               onChange={(e) => setDateFilter({...dateFilter, from: e.target.value})}
-              className="max-w-xs"
+              className="min-w-0 md:max-w-xs"
             />
             <Input
               type="date"
               placeholder="До"
-                  value={dateFilter.to || ""}
-                  onChange={(e) => setDateFilter({...dateFilter, to: e.target.value})}
-                  className="max-w-xs"
-                />
+              value={dateFilter.to || ""}
+              onChange={(e) => setDateFilter({...dateFilter, to: e.target.value})}
+              className="min-w-0 md:max-w-xs"
+            />
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as "createdAt" | "dueDate" | "priority")}
@@ -454,11 +454,26 @@ function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFil
   const utils = trpc.useUtils();
 
   const updateTaskStatusMutation = trpc.tasks.updateTaskStatus.useMutation({
+    onMutate: async (newStatus) => {
+      await utils.tasks.getTasksByColumn.cancel();
+      const previousData = utils.tasks.getTasksByColumn.getData();
+      utils.tasks.getTasksByColumn.setData({ columnId: 0 }, (old: any) => {
+        if (!old) return old;
+        return old.map((task: any) => 
+          task.id === newStatus.id ? { ...task, status: newStatus.status } : task
+        );
+      });
+      return { previousData };
+    },
     onSuccess: () => {
-      utils.tasks.getTasksByColumn.invalidate();
       toast.success("Статус задачи обновлен");
     },
-    onError: () => toast.error("Ошибка обновления статуса задачи"),
+    onError: (err, newStatus, context: any) => {
+      if (context?.previousData) {
+        utils.tasks.getTasksByColumn.setData({ columnId: 0 }, context.previousData);
+      }
+      toast.error("Ошибка обновления статуса задачи");
+    },
   });
 
   const createTaskMutation = trpc.tasks.createTask.useMutation({
