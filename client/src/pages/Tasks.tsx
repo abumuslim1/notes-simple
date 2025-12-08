@@ -524,14 +524,17 @@ function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFil
                 }
               }}
               autoFocus
-              className="flex-1 px-2 py-1 rounded text-white font-semibold text-sm bg-white bg-opacity-20 focus:outline-none focus:bg-opacity-30"
+              className="flex-1 px-2 py-1 rounded text-black font-semibold text-sm bg-white bg-opacity-90 focus:outline-none focus:bg-opacity-95"
             />
           </div>
         ) : (
           <div className="h-12 cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-between px-3" style={{ backgroundColor: columnColor }} onDoubleClick={() => setIsEditingName(true)}>
             <span className="text-white font-semibold text-sm flex-1">{column.name}</span>
-            <button onClick={() => setIsEditingColor(!isEditingColor)} className="text-white hover:bg-white hover:bg-opacity-20 p-1 rounded">
+            <button onClick={() => setIsEditingColor(!isEditingColor)} className="text-white hover:bg-white hover:bg-opacity-20 p-1 rounded ml-2">
               ●
+            </button>
+            <button onClick={() => onDelete()} className="text-white hover:bg-red-500 hover:bg-opacity-50 p-1 rounded">
+              ✕
             </button>
           </div>
         )}

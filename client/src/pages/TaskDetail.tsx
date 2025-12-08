@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Trash2, Edit2, X, Check, Upload, File, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 export default function TaskDetail() {
   const [, params] = useRoute("/task/:id");
@@ -286,11 +287,10 @@ export default function TaskDetail() {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Описание</label>
-              <Textarea
-                value={editData.description}
-                onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+              <RichTextEditor
+                value={editData.description || ""}
+                onChange={(content) => setEditData({ ...editData, description: content })}
                 placeholder="Описание задачи"
-                rows={4}
               />
             </div>
 
