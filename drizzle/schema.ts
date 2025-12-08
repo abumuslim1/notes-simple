@@ -200,6 +200,23 @@ export type TaskComment = typeof taskComments.$inferSelect;
 export type InsertTaskComment = typeof taskComments.$inferInsert;
 
 /**
+ * Task comment files/attachments
+ */
+export const taskCommentFiles = mysqlTable("taskCommentFiles", {
+  id: int("id").autoincrement().primaryKey(),
+  commentId: int("commentId").notNull().references(() => taskComments.id, { onDelete: "cascade" }),
+  fileName: varchar("fileName", { length: 500 }).notNull(),
+  fileKey: varchar("fileKey", { length: 500 }).notNull(),
+  fileUrl: text("fileUrl").notNull(),
+  fileSize: int("fileSize").notNull(),
+  mimeType: varchar("mimeType", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TaskCommentFile = typeof taskCommentFiles.$inferSelect;
+export type InsertTaskCommentFile = typeof taskCommentFiles.$inferInsert;
+
+/**
  * Column archive status
  */
 export const taskBoardColumnsArchive = mysqlTable("taskBoardColumnsArchive", {

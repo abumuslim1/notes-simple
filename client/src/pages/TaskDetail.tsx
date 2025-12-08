@@ -57,7 +57,10 @@ export default function TaskDetail() {
       const utils = trpc.useUtils();
       utils.tasks.getComments.invalidate({ taskId: taskId! });
     },
-    onError: () => toast.error("Ошибка добавления комментария"),
+    onError: (error) => {
+      console.error("Error adding comment:", error);
+      toast.error("Ошибка добавления комментария");
+    },
   });
 
   const deleteCommentMutation = trpc.tasks.deleteComment.useMutation({

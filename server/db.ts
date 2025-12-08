@@ -1,6 +1,6 @@
 import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, folders, notes, noteVersions, noteFiles, noteTags, licenses, taskBoardColumns, tasks, taskFiles, taskTags, taskComments, taskBoardColumnsArchive, InsertFolder, InsertNote, InsertNoteVersion, InsertNoteFile, InsertNoteTag, InsertTaskBoardColumn, InsertTask, InsertTaskFile, InsertTaskTag, InsertTaskComment, InsertTaskBoardColumnArchive } from "../drizzle/schema";
+import { InsertUser, users, folders, notes, noteVersions, noteFiles, noteTags, licenses, taskBoardColumns, tasks, taskFiles, taskTags, taskComments, taskCommentFiles, taskBoardColumnsArchive, InsertFolder, InsertNote, InsertNoteVersion, InsertNoteFile, InsertNoteTag, InsertTaskBoardColumn, InsertTask, InsertTaskFile, InsertTaskTag, InsertTaskComment, InsertTaskCommentFile, InsertTaskBoardColumnArchive } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -370,7 +370,17 @@ export async function createTaskComment(data: { taskId: number; userId: number; 
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result: any = await db.insert(taskComments).values(data);
-  return result[0].insertId;
+  const commentId = result[0].insertId;
+  
+  // Fetch the created comment with author info
+  const comment = await db.select().from(taskComments).where(eq(taskComments.id, commentId)).then(r => r[0]);
+  if (!comment) throw new Error("Failed to create comment");
+  
+  const author = await getUserById(comment.userId);
+  return {
+    ...comment,
+    author: author ? { id: author.id, name: author.name, username: author.username } : null,
+  };
 }
 
 export async function deleteTaskComment(id: number) {
@@ -475,5 +485,35 @@ export async function toggleNoteFavorite(noteId: number, isFavorite: boolean) {
 // Additional user functions
 export async function updateUserLastSignedIn(userId: number) {
   // Placeholder - not used in current implementation
+  return true;
+}
+
+
+// Task comment files
+export async function addCommentFile(data: { commentId: number; fileName: string; fileKey: string; fileUrl: string; fileSize: number; mimeType?: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result: any = await db.insert(taskCommentFiles).values(data);
+  return result[0].insertId;
+}
+
+export async function getCommentFiles(commentId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const files = await db.select().from(taskCommentFiles).where(eq(taskCommentFiles.commentId, commentId));
+  return files.map(f => ({
+    id: f.id,
+    name: f.fileName,
+    url: f.fileUrl,
+    size: f.fileSize,
+    mimeType: f.mimeType,
+    createdAt: f.createdAt,
+  }));
+}
+
+export async function deleteCommentFile(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(taskCommentFiles).where(eq(taskCommentFiles.id, id));
   return true;
 }

@@ -156,18 +156,38 @@ export const tasksRouter = router({
   addComment: protectedProcedure
     .input(z.object({ taskId: z.number(), content: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
-      const id = await db.createTaskComment({
+      const comment = await db.createTaskComment({
         taskId: input.taskId,
         userId: ctx.user.id,
         content: input.content,
       });
-      return { id };
+      return comment;
     }),
 
   deleteComment: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       await db.deleteTaskComment(input.id);
+      return { success: true };
+    }),
+
+  getCommentFiles: protectedProcedure
+    .input(z.object({ commentId: z.number() }))
+    .query(async ({ input }) => {
+      return db.getCommentFiles(input.commentId);
+    }),
+
+  addCommentFile: protectedProcedure
+    .input(z.object({ commentId: z.number(), fileName: z.string(), fileKey: z.string(), fileUrl: z.string(), fileSize: z.number(), mimeType: z.string().optional() }))
+    .mutation(async ({ input }) => {
+      const id = await db.addCommentFile(input);
+      return { id };
+    }),
+
+  deleteCommentFile: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      await db.deleteCommentFile(input.id);
       return { success: true };
     }),
 
