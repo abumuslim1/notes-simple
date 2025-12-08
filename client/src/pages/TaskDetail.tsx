@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ export default function TaskDetail() {
   const [editData, setEditData] = useState<any>(null);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [commentText, setCommentText] = useState("");
+  const [commentFiles, setCommentFiles] = useState<File[]>([]);
 
   const { data: task, isLoading, error, refetch } = trpc.tasks.getTaskById.useQuery(
     { id: taskId! },
@@ -31,6 +32,28 @@ export default function TaskDetail() {
     { taskId: taskId! },
     { enabled: !!taskId }
   );
+  
+  // Fetch comment files for each comment
+  const [commentFilesMap, setCommentFilesMap] = useState<Record<number, any[]>>({});
+  
+  useEffect(() => {
+    if (comments.length > 0) {
+      const fetchFiles = async () => {
+        const filesMap: Record<number, any[]> = {};
+        for (const comment of comments) {
+          try {
+            const files = await utils.tasks.getCommentFiles.fetch({ commentId: (comment as any).id });
+            filesMap[(comment as any).id] = files;
+          } catch (error) {
+            console.error('Error fetching comment files:', error);
+            filesMap[(comment as any).id] = [];
+          }
+        }
+        setCommentFilesMap(filesMap);
+      };
+      fetchFiles();
+    }
+  }, [comments]);
 
   const deleteTaskMutation = trpc.tasks.deleteTask.useMutation({
     onSuccess: () => {
@@ -49,15 +72,46 @@ export default function TaskDetail() {
     onError: () => toast.error("Ошибка обновления задачи"),
   });
 
+  const utils = trpc.useUtils();
+  
   const addCommentMutation = trpc.tasks.addComment.useMutation({
+    onMutate: async (newComment) => {
+      // Cancel outgoing refetches
+      await utils.tasks.getComments.cancel({ taskId: taskId! });
+      
+      // Snapshot previous value
+      const previousComments = utils.tasks.getComments.getData({ taskId: taskId! });
+      
+      // Optimistically update to the new value
+      const now = new Date();
+      const optimisticComment = {
+        id: Date.now(), // temporary ID
+        taskId: taskId!,
+        userId: 0, // will be filled by server
+        content: newComment.content,
+        createdAt: now,
+        updatedAt: now,
+        author: { id: 0, name: "Вы", username: "" },
+      };
+      
+      utils.tasks.getComments.setData(
+        { taskId: taskId! },
+        (old) => old ? [optimisticComment, ...old] : [optimisticComment]
+      );
+      
+      return { previousComments };
+    },
     onSuccess: () => {
       setCommentText("");
       toast.success("Комментарий добавлен");
-      // Refetch comments
-      const utils = trpc.useUtils();
+      // Refetch to get the real data from server
       utils.tasks.getComments.invalidate({ taskId: taskId! });
     },
-    onError: (error) => {
+    onError: (error, newComment, context) => {
+      // Rollback on error
+      if (context?.previousComments) {
+        utils.tasks.getComments.setData({ taskId: taskId! }, context.previousComments);
+      }
       console.error("Error adding comment:", error);
       toast.error("Ошибка добавления комментария");
     },
@@ -133,11 +187,40 @@ export default function TaskDetail() {
     });
   };
 
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (!commentText.trim()) return;
+    
+    // First, add the comment
     addCommentMutation.mutate({
       taskId: taskId!,
       content: commentText,
+    }, {
+      onSuccess: async (newComment) => {
+        // Then upload files if any
+        if (commentFiles.length > 0) {
+          try {
+            for (const file of commentFiles) {
+              const formData = new FormData();
+              formData.append('file', file);
+              formData.append('commentId', newComment.id.toString());
+              
+              // Upload file to server
+              const response = await fetch('/api/upload-comment-file', {
+                method: 'POST',
+                body: formData,
+              });
+              
+              if (!response.ok) {
+                throw new Error('File upload failed');
+              }
+            }
+            setCommentFiles([]);
+          } catch (error) {
+            console.error('Error uploading files:', error);
+            toast.error('Ошибка загрузки файлов');
+          }
+        }
+      }
     });
   };
 
@@ -398,8 +481,51 @@ export default function TaskDetail() {
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder="Добавить комментарий..."
                 rows={3}
-                className="mb-2"
+                className="mb-3"
               />
+              
+              {/* File Upload for Comments */}
+              <div className="mb-3">
+                <input
+                  type="file"
+                  id="comment-file-upload"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    setCommentFiles(prev => [...prev, ...files]);
+                  }}
+                />
+                <label
+                  htmlFor="comment-file-upload"
+                  className="inline-flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md cursor-pointer hover:bg-gray-100"
+                >
+                  <Upload className="w-4 h-4" />
+                  Прикрепить файл
+                </label>
+              </div>
+
+              {/* Preview attached files */}
+              {commentFiles.length > 0 && (
+                <div className="mb-3 space-y-2">
+                  {commentFiles.map((file, idx) => (
+                    <div key={idx} className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200">
+                      <File className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-700 flex-1 truncate">{file.name}</span>
+                      <span className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => setCommentFiles(prev => prev.filter((_, i) => i !== idx))}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
               <Button
                 size="sm"
                 onClick={handleAddComment}
@@ -432,7 +558,29 @@ export default function TaskDetail() {
                         <X className="w-4 h-4" />
                       </Button>
                     </div>
-                    <p className="text-gray-700 whitespace-pre-wrap">{comment.content}</p>
+                    <p className="text-gray-700 whitespace-pre-wrap mb-3">{comment.content}</p>
+                    
+                    {/* Comment Files */}
+                    {commentFilesMap[comment.id] && commentFilesMap[comment.id].length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {commentFilesMap[comment.id].map((file: any) => (
+                          <div key={file.id} className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200">
+                            <File className="w-4 h-4 text-gray-400" />
+                            <a
+                              href={file.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-blue-600 hover:underline flex-1 truncate"
+                            >
+                              {file.name}
+                            </a>
+                            <span className="text-xs text-gray-500">
+                              {file.size ? `${(file.size / 1024).toFixed(1)} KB` : ''}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

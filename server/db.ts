@@ -493,7 +493,14 @@ export async function updateUserLastSignedIn(userId: number) {
 export async function addCommentFile(data: { commentId: number; fileName: string; fileKey: string; fileUrl: string; fileSize: number; mimeType?: string }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result: any = await db.insert(taskCommentFiles).values(data);
+  const result: any = await db.insert(taskCommentFiles).values({
+    commentId: data.commentId,
+    fileName: data.fileName,
+    fileKey: data.fileKey,
+    fileUrl: data.fileUrl,
+    fileSize: data.fileSize,
+    mimeType: data.mimeType || null,
+  });
   return result[0].insertId;
 }
 
