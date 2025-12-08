@@ -1,0 +1,21 @@
+{
+  "query": "SELECT * FROM licenses;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4EhEvvP8nk1bR2K.2f7457505b94 --database Ucy9gyL2VGm4JdLWfaCfET --execute SELECT * FROM licenses;",
+  "rows": [
+    {
+      "id": "30002",
+      "serverId": "default",
+      "ownerName": "Owner",
+      "expiresAt": "2026-12-08 06:13:58",
+      "trialStartedAt": "2025-12-08 06:13:58",
+      "isActive": "1",
+      "allowPublicRegistration": "1",
+      "createdAt": "2025-12-08 06:13:58",
+      "updatedAt": "2025-12-08 06:13:58"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tserverId\townerName\texpiresAt\ttrialStartedAt\tisActive\tallowPublicRegistration\tcreatedAt\tupdatedAt\n30002\tdefault\tOwner\t2026-12-08 06:13:58\t2025-12-08 06:13:58\t1\t1\t2025-12-08 06:13:58\t2025-12-08 06:13:58\n",
+  "stderr": "",
+  "execution_time_ms": 58
+}

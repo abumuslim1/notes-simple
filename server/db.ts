@@ -309,7 +309,15 @@ export async function createTaskFile(data: InsertTaskFile): Promise<number> {
 export async function getTaskFiles(taskId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.select().from(taskFiles).where(eq(taskFiles.taskId, taskId));
+  const files = await db.select().from(taskFiles).where(eq(taskFiles.taskId, taskId));
+  return files.map(f => ({
+    id: f.id,
+    name: f.fileName,
+    url: f.fileUrl,
+    size: f.fileSize,
+    mimeType: f.mimeType,
+    createdAt: f.createdAt,
+  }));
 }
 
 export async function deleteTaskFile(id: number) {
@@ -342,7 +350,20 @@ export async function deleteTaskTag(taskId: number, tag: string) {
 export async function getTaskComments(taskId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.select().from(taskComments).where(eq(taskComments.taskId, taskId)).orderBy(desc(taskComments.createdAt));
+  const comments = await db.select().from(taskComments).where(eq(taskComments.taskId, taskId)).orderBy(desc(taskComments.createdAt));
+  
+  // Enrich comments with user information
+  const enrichedComments = await Promise.all(
+    comments.map(async (comment) => {
+      const user = await getUserById(comment.userId);
+      return {
+        ...comment,
+        author: user ? { id: user.id, name: user.name, username: user.username } : null,
+      };
+    })
+  );
+  
+  return enrichedComments;
 }
 
 export async function createTaskComment(data: { taskId: number; userId: number; content: string }) {

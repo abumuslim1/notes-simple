@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Trash2, Edit2, X, Check, Upload, File } from "lucide-react";
+import { ArrowLeft, Trash2, Edit2, X, Check, Upload, File, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 
 export default function TaskDetail() {
@@ -14,7 +14,7 @@ export default function TaskDetail() {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<any>(null);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
+  const [commentText, setCommentText] = useState("");
 
   const { data: task, isLoading, error, refetch } = trpc.tasks.getTaskById.useQuery(
     { id: taskId! },
@@ -26,6 +26,11 @@ export default function TaskDetail() {
   });
 
   const { data: users = [] } = trpc.tasks.getUsers.useQuery();
+
+  const { data: comments = [] } = trpc.tasks.getComments.useQuery(
+    { taskId: taskId! },
+    { enabled: !!taskId }
+  );
 
   const deleteTaskMutation = trpc.tasks.deleteTask.useMutation({
     onSuccess: () => {
@@ -42,6 +47,26 @@ export default function TaskDetail() {
       refetch();
     },
     onError: () => toast.error("Ошибка обновления задачи"),
+  });
+
+  const addCommentMutation = trpc.tasks.addComment.useMutation({
+    onSuccess: () => {
+      setCommentText("");
+      toast.success("Комментарий добавлен");
+      // Refetch comments
+      const utils = trpc.useUtils();
+      utils.tasks.getComments.invalidate({ taskId: taskId! });
+    },
+    onError: () => toast.error("Ошибка добавления комментария"),
+  });
+
+  const deleteCommentMutation = trpc.tasks.deleteComment.useMutation({
+    onSuccess: () => {
+      toast.success("Комментарий удален");
+      const utils = trpc.useUtils();
+      utils.tasks.getComments.invalidate({ taskId: taskId! });
+    },
+    onError: () => toast.error("Ошибка удаления комментария"),
   });
 
   if (!taskId) {
@@ -95,8 +120,6 @@ export default function TaskDetail() {
   };
 
   const handleSave = async () => {
-    // TODO: Implement file upload to S3
-    // For now, just save task data
     updateTaskMutation.mutate({
       id: editData.id,
       title: editData.title,
@@ -104,6 +127,14 @@ export default function TaskDetail() {
       priority: editData.priority,
       dueDate: editData.dueDate || undefined,
       assignedToUserId: editData.assignedToUserId ? parseInt(editData.assignedToUserId) : undefined,
+    });
+  };
+
+  const handleAddComment = () => {
+    if (!commentText.trim()) return;
+    addCommentMutation.mutate({
+      taskId: taskId!,
+      content: commentText,
     });
   };
 
@@ -350,7 +381,64 @@ export default function TaskDetail() {
             </div>
           )}
 
-          <div className="border-t pt-6 text-xs text-gray-500">
+          {/* Comments Section */}
+          <div className="border-t pt-6 mt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <MessageCircle className="w-5 h-5 text-gray-600" />
+              <h2 className="text-sm font-semibold text-gray-700">Комментарии ({comments.length})</h2>
+            </div>
+
+            {/* Add Comment Form */}
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <Textarea
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Добавить комментарий..."
+                rows={3}
+                className="mb-2"
+              />
+              <Button
+                size="sm"
+                onClick={handleAddComment}
+                disabled={!commentText.trim() || addCommentMutation.isPending}
+              >
+                {addCommentMutation.isPending ? "Добавление..." : "Добавить комментарий"}
+              </Button>
+            </div>
+
+            {/* Comments List */}
+            {comments.length > 0 ? (
+              <div className="space-y-4">
+                {comments.map((comment: any) => (
+                  <div key={comment.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="font-semibold text-gray-900">
+                          {comment.author?.name || comment.author?.username || "Неизвестный пользователь"}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(comment.createdAt).toLocaleString("ru-RU")}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteCommentMutation.mutate({ id: comment.id })}
+                        disabled={deleteCommentMutation.isPending}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <p className="text-gray-700 whitespace-pre-wrap">{comment.content}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm">Нет комментариев</p>
+            )}
+          </div>
+
+          <div className="border-t pt-6 mt-6 text-xs text-gray-500">
             <p>Создано: {new Date(task.createdAt).toLocaleString("ru-RU")}</p>
             {task.updatedAt && (
               <p>Обновлено: {new Date(task.updatedAt).toLocaleString("ru-RU")}</p>

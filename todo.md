@@ -162,4 +162,12 @@
 - [x] Enable registration in license settings
 - [x] Add registration UI to login page
 - [x] Test registration flow (35 tests passing)
-- [ ] Create checkpoint with registration enabled
+- [x] Rollback registration changes - registration disabled
+
+## File Attachments & Comments in Tasks
+- [x] Fix file display in task detail - update getTaskFiles to return proper structure
+- [x] Add comments functionality to TaskDetail page
+- [x] Implement comment creation and deletion
+- [x] Display comments with author information
+- [x] All 35 tests passing
+- [ ] Create checkpoint with fixes

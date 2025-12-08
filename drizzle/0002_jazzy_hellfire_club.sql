@@ -1,0 +1,1 @@
+ALTER TABLE `licenses` MODIFY COLUMN `allowPublicRegistration` int NOT NULL DEFAULT 1;

@@ -93,16 +93,6 @@ export function Login() {
               {isLoading ? "Вход..." : "Войти"}
             </Button>
           </form>
-
-          <div className="mt-4 text-center text-sm">
-            Нет аккаунта?{" "}
-            <button
-              onClick={() => navigate("/register")}
-              className="text-blue-600 hover:underline font-medium"
-            >
-              Зарегистрируйтесь
-            </button>
-          </div>
         </CardContent>
       </Card>
     </div>
