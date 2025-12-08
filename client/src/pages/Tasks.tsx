@@ -590,9 +590,9 @@ function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFil
                           {task.title}
                         </h3>
                         {task.description && (
-                          <p className="text-xs text-gray-600 mb-2 line-clamp-2">
-                            {task.description}
-                          </p>
+                          <div className="text-xs text-gray-600 mb-2 line-clamp-2 [&_h1]:text-xs [&_h1]:font-bold [&_h1]:my-0 [&_h2]:text-xs [&_h2]:font-bold [&_h2]:my-0 [&_h3]:text-xs [&_h3]:font-bold [&_h3]:my-0 [&_p]:my-0 [&_ul]:list-disc [&_ul]:ml-3 [&_ol]:list-decimal [&_ol]:ml-3 [&_li]:my-0 [&_strong]:font-bold [&_em]:italic [&_code]:bg-gray-100 [&_code]:px-0.5 [&_code]:rounded [&_pre]:bg-gray-100 [&_pre]:p-1 [&_pre]:rounded [&_blockquote]:border-l-2 [&_blockquote]:border-gray-300 [&_blockquote]:pl-2 [&_blockquote]:italic"
+                            dangerouslySetInnerHTML={{ __html: task.description }}
+                          />
                         )}
                         <div className="flex flex-wrap gap-2 mb-2">
                           {task.priority && (
