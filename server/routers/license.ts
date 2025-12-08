@@ -61,7 +61,8 @@ export const licenseRouter = router({
    * Get license settings (public registration status)
    */
   getSettings: publicProcedure.query(async () => {
-    const settings = await db.getLicenseSettings();
+    // Get first license (there should be only one per server)
+    const settings = await db.getLicenseSettings(1);
     return {
       allowPublicRegistration: settings?.allowPublicRegistration === 1 ? true : false,
     };
@@ -75,7 +76,7 @@ export const licenseRouter = router({
       allowPublicRegistration: z.boolean(),
     }))
     .mutation(async ({ input }) => {
-      const license = await db.getLicenseSettings();
+      const license = await db.getLicenseSettings(1);
       if (license) {
         await db.updateLicenseSettings(license.id, {
           allowPublicRegistration: input.allowPublicRegistration ? 1 : 0,

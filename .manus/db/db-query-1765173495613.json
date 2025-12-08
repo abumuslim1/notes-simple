@@ -1,0 +1,9 @@
+{
+  "query": "DROP TABLE IF EXISTS taskComments;\nDROP TABLE IF EXISTS taskBoardColumnsArchive;\nDROP TABLE IF EXISTS taskFiles;\nDROP TABLE IF EXISTS taskTags;\nDROP TABLE IF EXISTS tasks;\nDROP TABLE IF EXISTS taskBoardColumns;\nDROP TABLE IF EXISTS noteFiles;\nDROP TABLE IF EXISTS noteTags;\nDROP TABLE IF EXISTS noteVersions;\nDROP TABLE IF EXISTS notes;\nDROP TABLE IF EXISTS licenseKeys;\nDROP TABLE IF EXISTS licenses;\nDROP TABLE IF EXISTS folders;\nDROP TABLE IF EXISTS users;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4EhEvvP8nk1bR2K.2f7457505b94 --database Ucy9gyL2VGm4JdLWfaCfET --execute DROP TABLE IF EXISTS taskComments;\nDROP TABLE IF EXISTS taskBoardColumnsArchive;\nDROP TABLE IF EXISTS taskFiles;\nDROP TABLE IF EXISTS taskTags;\nDROP TABLE IF EXISTS tasks;\nDROP TABLE IF EXISTS taskBoardColumns;\nDROP TABLE IF EXISTS noteFiles;\nDROP TABLE IF EXISTS noteTags;\nDROP TABLE IF EXISTS noteVersions;\nDROP TABLE IF EXISTS notes;\nDROP TABLE IF EXISTS licenseKeys;\nDROP TABLE IF EXISTS licenses;\nDROP TABLE IF EXISTS folders;\nDROP TABLE IF EXISTS users;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 3430
+}

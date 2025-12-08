@@ -94,12 +94,10 @@ export function NoteSidebar() {
         {/* Search suggestions */}
         {suggestions.length > 0 && (
           <div className="mt-2 bg-gray-50 rounded-md border border-gray-200 overflow-hidden">
-            {suggestions.map((suggestion) => (
-              <Link key={suggestion.id} href={`/note/${suggestion.id}`}>
-                <div className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm text-gray-700 border-b border-gray-100 last:border-0">
-                  {suggestion.title}
-                </div>
-              </Link>
+            {suggestions.map((suggestion, idx) => (
+              <div key={idx} className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm text-gray-700 border-b border-gray-100 last:border-0">
+                {suggestion}
+              </div>
             ))}
           </div>
         )}

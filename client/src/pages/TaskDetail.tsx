@@ -334,6 +334,22 @@ export default function TaskDetail() {
             </div>
           )}
 
+          {(task as any).attachments && (task as any).attachments.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-sm font-semibold text-gray-700 mb-2">Файлы</h2>
+              <ul className="space-y-2">
+                {(task as any).attachments.map((file: any, idx: number) => (
+                  <li key={idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
+                    <File className="w-4 h-4 text-gray-400" />
+                    <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline flex-1 truncate">
+                      {file.name || "Файл"}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="border-t pt-6 text-xs text-gray-500">
             <p>Создано: {new Date(task.createdAt).toLocaleString("ru-RU")}</p>
             {task.updatedAt && (

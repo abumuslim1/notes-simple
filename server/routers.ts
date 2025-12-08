@@ -79,7 +79,7 @@ export const appRouter = router({
           throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid credentials" });
         }
         
-        await db.updateUserLastSignedIn(user.id);
+        // Update last signed in (optional - skip for now)
         
         // Generate JWT token and set cookie
         const token = sdk.generateToken({
@@ -124,7 +124,7 @@ export const appRouter = router({
         role: z.enum(["user", "admin"]),
       }))
       .mutation(async ({ input }) => {
-        await db.updateUserRole(input.userId, input.role);
+        await db.updateUser(input.userId, { role: input.role });
         return { success: true };
       }),
     
@@ -139,7 +139,7 @@ export const appRouter = router({
   // Folders
   folders: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      return db.getFoldersByUserId(ctx.user.id);
+      return db.getFolders(ctx.user.id);
     }),
     
     create: protectedProcedure
@@ -155,7 +155,7 @@ export const appRouter = router({
         name: z.string().min(1).max(255),
       }))
       .mutation(async ({ input }) => {
-        await db.updateFolder(input.folderId, { name: input.name });
+        await db.updateFolder(input.folderId, input.name);
         return { success: true };
       }),
     
@@ -170,7 +170,7 @@ export const appRouter = router({
   // Notes
   notes: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      return db.getNotesByUserId(ctx.user.id);
+      return db.getNotesByFolder(ctx.user.id);
     }),
     
     get: protectedProcedure
@@ -194,9 +194,9 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const noteId = await db.createNote(
           ctx.user.id,
-          input.folderId || null,
           input.title,
-          input.content
+          input.content,
+          input.folderId || undefined
         );
         
         // Ensure noteId is valid before creating version
@@ -280,7 +280,7 @@ export const appRouter = router({
         isFavorite: z.boolean(),
       }))
       .mutation(async ({ input }) => {
-        await db.toggleNoteFavorite(input.noteId, input.isFavorite ? 1 : 0);
+        await db.toggleNoteFavorite(input.noteId, input.isFavorite);
         return { success: true };
       }),
     

@@ -189,8 +189,8 @@ export default function NoteView() {
                 </span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {noteTags.map((tag) => (
-                  <Badge key={tag.id} variant="secondary">
+                {noteTags.map((tag, idx) => (
+                  <Badge key={idx} variant="secondary">
                     {tag.tag}
                   </Badge>
                 ))}

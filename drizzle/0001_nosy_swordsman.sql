@@ -6,5 +6,4 @@ CREATE TABLE `taskTags` (
 	CONSTRAINT `taskTags_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
-ALTER TABLE `tasks` ADD `priority` enum('low','medium','high') DEFAULT 'medium';--> statement-breakpoint
 ALTER TABLE `taskTags` ADD CONSTRAINT `taskTags_taskId_tasks_id_fk` FOREIGN KEY (`taskId`) REFERENCES `tasks`(`id`) ON DELETE cascade ON UPDATE no action;

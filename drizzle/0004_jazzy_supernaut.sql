@@ -1,1 +1,0 @@
-ALTER TABLE `licenses` ADD `allowPublicRegistration` int DEFAULT 0 NOT NULL;

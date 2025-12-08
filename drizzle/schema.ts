@@ -171,7 +171,9 @@ export const taskFiles = mysqlTable("taskFiles", {
 export type TaskFile = typeof taskFiles.$inferSelect;
 export type InsertTaskFile = typeof taskFiles.$inferInsert;
 
-// taskTags table already exists in the database
+/**
+ * Task tags
+ */
 export const taskTags = mysqlTable("taskTags", {
   id: int("id").autoincrement().primaryKey(),
   taskId: int("taskId").notNull().references(() => tasks.id, { onDelete: "cascade" }),
@@ -181,3 +183,31 @@ export const taskTags = mysqlTable("taskTags", {
 
 export type TaskTag = typeof taskTags.$inferSelect;
 export type InsertTaskTag = typeof taskTags.$inferInsert;
+
+/**
+ * Task comments
+ */
+export const taskComments = mysqlTable("taskComments", {
+  id: int("id").autoincrement().primaryKey(),
+  taskId: int("taskId").notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TaskComment = typeof taskComments.$inferSelect;
+export type InsertTaskComment = typeof taskComments.$inferInsert;
+
+/**
+ * Column archive status
+ */
+export const taskBoardColumnsArchive = mysqlTable("taskBoardColumnsArchive", {
+  id: int("id").autoincrement().primaryKey(),
+  columnId: int("columnId").notNull().references(() => taskBoardColumns.id, { onDelete: "cascade" }),
+  isArchived: boolean("isArchived").default(false).notNull(),
+  archivedAt: timestamp("archivedAt"),
+});
+
+export type TaskBoardColumnArchive = typeof taskBoardColumnsArchive.$inferSelect;
+export type InsertTaskBoardColumnArchive = typeof taskBoardColumnsArchive.$inferInsert;

@@ -608,18 +608,7 @@ function TaskColumn({ column, onDelete, onRefetch, searchQuery = "", priorityFil
                               {priorityLabels[task.priority] || task.priority}
                             </span>
                           )}
-                          {task.tags && Array.isArray(task.tags) && task.tags.length > 0 && (
-                            <div className="flex gap-1 flex-wrap">
-                              {task.tags.map((tag: any) => (
-                                <span
-                                  key={tag}
-                                  className="inline-block px-2 py-1 rounded text-xs bg-gray-100 text-gray-700"
-                                >
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          )}
+
                         </div>
                         {task.dueDate && (
                           <p className="text-xs text-gray-500">

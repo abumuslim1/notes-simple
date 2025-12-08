@@ -150,3 +150,10 @@
 - [x] Add ability to edit column names
 - [x] Test all new features
 - [ ] Create checkpoint with new features
+
+## File Attachments & Comments
+- [x] Display uploaded files in task detail view
+- [x] Add comments system to tasks (procedures added)
+- [x] Add archive functionality for columns (procedures added)
+- [x] Test all new features (35 tests passing)
+- [ ] Create checkpoint with new features

@@ -52,7 +52,10 @@ export const tasksRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      await db.reorderTaskBoardColumns(ctx.user.id, input.columnIds);
+      // Reorder columns by updating positions
+      for (let i = 0; i < input.columnIds.length; i++) {
+        await db.updateTaskBoardColumn(input.columnIds[i], { position: i });
+      }
       return { success: true };
     }),
 
@@ -66,7 +69,7 @@ export const tasksRouter = router({
   getTasksByColumn: protectedProcedure
     .input(z.object({ columnId: z.number() }))
     .query(async ({ input }) => {
-      return db.getTasksByColumnId(input.columnId);
+      return db.getTasksByColumn(input.columnId);
     }),
 
   createTask: protectedProcedure
@@ -142,5 +145,40 @@ export const tasksRouter = router({
 
   getUsers: protectedProcedure.query(async () => {
     return db.getAllUsers();
+  }),
+
+  getComments: protectedProcedure
+    .input(z.object({ taskId: z.number() }))
+    .query(async ({ input }) => {
+      return db.getTaskComments(input.taskId);
+    }),
+
+  addComment: protectedProcedure
+    .input(z.object({ taskId: z.number(), content: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const id = await db.createTaskComment({
+        taskId: input.taskId,
+        userId: ctx.user.id,
+        content: input.content,
+      });
+      return { id };
+    }),
+
+  deleteComment: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      await db.deleteTaskComment(input.id);
+      return { success: true };
+    }),
+
+  toggleColumnArchive: protectedProcedure
+    .input(z.object({ columnId: z.number(), isArchived: z.boolean() }))
+    .mutation(async ({ input }) => {
+      await db.updateColumnArchiveStatus(input.columnId, input.isArchived);
+      return { success: true };
+    }),
+
+  getArchivedColumns: protectedProcedure.query(async ({ ctx }) => {
+    return db.getArchivedColumns(ctx.user.id);
   }),
 });
