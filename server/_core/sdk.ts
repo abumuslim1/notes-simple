@@ -93,6 +93,8 @@ class SDKServer {
 
   /**
    * Create auth token and set cookie
+   * Note: secure flag is set to false for development (HTTP)
+   * In production, this should be true for HTTPS
    */
   setAuthCookie(res: any, token: string) {
     res.cookie(COOKIE_NAME, token, {
@@ -106,6 +108,7 @@ class SDKServer {
 
   /**
    * Clear auth cookie
+   * Note: secure flag must match setAuthCookie for proper cookie deletion
    */
   clearAuthCookie(res: any) {
     res.clearCookie(COOKIE_NAME, {
