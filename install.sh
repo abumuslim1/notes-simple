@@ -52,6 +52,17 @@ print_header "Шаг 1: Обновление пакетов системы"
 apt-get update -qq || print_warning "Ошибка при обновлении пакетов, продолжаю..."
 print_success "Пакеты обновлены"
 
+# Шаг 1.5: Проверка systemd/systemctl
+print_header "Шаг 1.5: Проверка systemd"
+if command -v systemctl &> /dev/null; then
+    SYSTEMD_VERSION=$(systemctl --version | head -n1)
+    print_success "systemd уже установлен: $SYSTEMD_VERSION"
+else
+    print_info "Установка systemd..."
+    apt-get install -y systemd || print_error "Ошибка при установке systemd"
+    print_success "systemd установлен"
+fi
+
 # Шаг 2: Установка Node.js
 print_header "Шаг 2: Проверка Node.js"
 if command -v node &> /dev/null; then
