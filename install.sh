@@ -166,15 +166,11 @@ cd "$INSTALL_DIR"
 pnpm db:push || print_warning "Миграция БД завершена (может потребовать ручного вмешательства)"
 print_success "База данных инициализирована"
 
-# Шаг 11: Сборка приложения
-print_header "Шаг 11: Сборка приложения для production"
-cd "$INSTALL_DIR"
-rm -rf dist node_modules/.vite 2>/dev/null || true
-pnpm build || print_error "Ошибка при сборке приложения"
-print_success "Приложение собрано"
+# Небольшая задержка для убедитесь, что БД полностью инициализирована
+sleep 2
 
-# Шаг 12: Создание администратора
-print_header "Шаг 12: Создание администратора"
+# Шаг 11: Создание администратора
+print_header "Шаг 11: Создание администратора"
 cd "$INSTALL_DIR"
 
 # Генерируем хеш пароля (SHA256)
@@ -190,12 +186,23 @@ if [ -z "$EXISTING" ]; then
 INSERT INTO users (username, passwordHash, name, role, createdAt, updatedAt, lastSignedIn)
 VALUES ('$ADMIN_USERNAME', '$ADMIN_PASSWORD_HASH', 'Administrator', 'admin', '$NOW', '$NOW', '$NOW');
 EOF
-    print_success "Администратор создан"
-    print_info "Логин: $ADMIN_USERNAME"
-    print_info "Пароль: $ADMIN_PASSWORD"
+    if [ $? -eq 0 ]; then
+        print_success "Администратор создан"
+        print_info "Логин: $ADMIN_USERNAME"
+        print_info "Пароль: $ADMIN_PASSWORD"
+    else
+        print_warning "Ошибка при создании администратора, продолжаю..."
+    fi
 else
     print_warning "Администратор уже существует"
 fi
+
+# Шаг 12: Сборка приложения
+print_header "Шаг 12: Сборка приложения для production"
+cd "$INSTALL_DIR"
+rm -rf dist node_modules/.vite 2>/dev/null || true
+pnpm build || print_error "Ошибка при сборке приложения"
+print_success "Приложение собрано"
 
 # Шаг 13: Установка прав доступа
 print_header "Шаг 13: Установка прав доступа"
