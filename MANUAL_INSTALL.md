@@ -89,6 +89,19 @@ EOF
 cat /opt/notes-service/.env
 ```
 
+## Шаг 9.5: Установка прав доступа
+
+```bash
+sudo chown -R notes:notes /opt/notes-service
+sudo chmod -R 755 /opt/notes-service
+```
+
+Очистите кеш pnpm:
+
+```bash
+sudo -u notes pnpm store prune
+```
+
 ## Шаг 10: Установка зависимостей
 
 ```bash
@@ -145,11 +158,9 @@ sudo -u notes pnpm build
 ls -la /opt/notes-service/dist/
 ```
 
-## Шаг 14: Установка прав доступа
+## Шаг 14: Права доступа для .env
 
 ```bash
-sudo chown -R notes:notes /opt/notes-service
-sudo chmod -R 755 /opt/notes-service
 sudo chmod 600 /opt/notes-service/.env
 ```
 
