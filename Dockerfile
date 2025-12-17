@@ -26,8 +26,9 @@ WORKDIR /app
 # Установка pnpm
 RUN npm install -g pnpm
 
-# Копирование package.json и pnpm-lock.yaml
+# Копирование package.json, pnpm-lock.yaml и patches
 COPY package.json pnpm-lock.yaml ./
+COPY patches ./patches
 
 # Установка только production зависимостей
 RUN pnpm install --frozen-lockfile --prod
