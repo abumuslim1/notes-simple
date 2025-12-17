@@ -53,32 +53,56 @@ print_success "Система обновлена"
 # Шаг 2: Установка Docker
 print_header "Шаг 2: Установка Docker"
 if command -v docker &> /dev/null; then
-    DOCKER_VERSION=$(docker --version)
-    print_success "Docker уже установлен: $DOCKER_VERSION"
+    print_info "Docker уже установлен"
 else
     print_info "Установка Docker..."
     curl -fsSL https://get.docker.com -o get-docker.sh
     sh get-docker.sh
     rm get-docker.sh
-    print_success "Docker установлен: $(docker --version)"
+    print_success "Docker установлен"
+fi
+
+# Настройка Docker для обхода rate limit
+print_info "Настройка Docker для обхода rate limit..."
+mkdir -p /etc/docker
+cat > /etc/docker/daemon.json << 'EOF'
+{
+  "registry-mirrors": [
+    "https://mirror.gcr.io"
+  ],
+  "max-concurrent-downloads": 3,
+  "max-concurrent-uploads": 3,
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+  }
+}
+EOF
+
+# Перезапуск Docker для применения настроек
+if systemctl is-active --quiet docker; then
+    print_info "Перезапуск Docker..."
+    systemctl restart docker
+    sleep 3
+    print_success "Docker перезапущен"
 fi
 
 # Шаг 3: Установка Docker Compose
 print_header "Шаг 3: Установка Docker Compose"
 if command -v docker-compose &> /dev/null; then
-    COMPOSE_VERSION=$(docker-compose --version)
-    print_success "Docker Compose уже установлен: $COMPOSE_VERSION"
+    print_info "Docker Compose уже установлен"
 else
     print_info "Установка Docker Compose..."
     curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
     chmod +x /usr/local/bin/docker-compose
-    print_success "Docker Compose установлен: $(docker-compose --version)"
+    print_success "Docker Compose установлен"
 fi
 
 # Шаг 4: Установка Git
-print_header "Шаг 4: Проверка Git"
+print_header "Шаг 4: Установка Git"
 if command -v git &> /dev/null; then
-    print_success "Git уже установлен: $(git --version)"
+    print_info "Git уже установлен"
 else
     print_info "Установка Git..."
     apt-get install -y git
@@ -88,86 +112,103 @@ fi
 # Шаг 5: Клонирование репозитория
 print_header "Шаг 5: Клонирование репозитория"
 if [ -d "$INSTALL_DIR" ]; then
-    print_warning "Директория $INSTALL_DIR уже существует, обновляю..."
-    cd "$INSTALL_DIR"
-    git fetch origin
-    git checkout release
-    git pull origin release
-else
-    git clone -b release https://github.com/abumuslim1/notes-simple.git "$INSTALL_DIR" || print_error "Ошибка при клонировании репозитория"
-    cd "$INSTALL_DIR"
+    print_warning "Директория $INSTALL_DIR уже существует"
+    read -p "Удалить и клонировать заново? (y/n): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        rm -rf "$INSTALL_DIR"
+        print_info "Директория удалена"
+    else
+        print_info "Используем существующую директорию"
+        cd "$INSTALL_DIR"
+        git pull origin release || print_warning "Ошибка при обновлении репозитория"
+    fi
 fi
-print_success "Репозиторий готов"
 
-# Шаг 6: Создание файла .env
-print_header "Шаг 6: Создание файла конфигурации"
-if [ ! -f "$INSTALL_DIR/.env" ]; then
+if [ ! -d "$INSTALL_DIR" ]; then
+    print_info "Клонирование репозитория..."
+    cd /opt
+    git clone -b release https://github.com/abumuslim1/notes-simple.git notes-service
+    print_success "Репозиторий клонирован"
+fi
+
+cd "$INSTALL_DIR"
+
+# Шаг 6: Создание конфигурации
+print_header "Шаг 6: Создание конфигурации"
+if [ -f ".env" ]; then
+    print_warning "Файл .env уже существует, пропускаем создание"
+else
+    print_info "Создание файла .env..."
     JWT_SECRET=$(openssl rand -base64 32)
-    cat > "$INSTALL_DIR/.env" << EOF
-# Основные переменные
+    cat > .env << EOF
 NODE_ENV=production
-PORT=$APP_PORT
+PORT=3000
 DATABASE_URL=file:/app/data/notes.db
-
-# Безопасность
-JWT_SECRET="$JWT_SECRET"
-
-# Приложение
-VITE_APP_TITLE="Notes Service"
-OWNER_NAME="Administrator"
-
-# OAuth (опционально)
-VITE_APP_ID=""
-OAUTH_SERVER_URL=""
-VITE_OAUTH_PORTAL_URL=""
-OWNER_OPEN_ID=""
-BUILT_IN_FORGE_API_URL=""
-BUILT_IN_FORGE_API_KEY=""
-VITE_FRONTEND_FORGE_API_URL=""
-VITE_FRONTEND_FORGE_API_KEY=""
-VITE_ANALYTICS_ENDPOINT=""
-VITE_ANALYTICS_WEBSITE_ID=""
+JWT_SECRET=$JWT_SECRET
+VITE_APP_TITLE=Notes Service
+OWNER_NAME=Administrator
 EOF
     print_success "Файл .env создан"
-    print_info "JWT_SECRET: $JWT_SECRET"
-else
-    print_warning "Файл .env уже существует, пропускаю создание"
 fi
 
-# Шаг 7: Создание директории для БД
-print_header "Шаг 7: Создание директории для данных"
-mkdir -p "$INSTALL_DIR/data"
-chmod 755 "$INSTALL_DIR/data"
-print_success "Директория для данных создана"
+# Удаление version из docker-compose.yml
+print_info "Обновление docker-compose.yml..."
+sed -i '/^version:/d' docker-compose.yml || true
+print_success "docker-compose.yml обновлен"
 
-# Шаг 8: Запуск приложения с Docker Compose
+# Шаг 7: Предварительная загрузка образа Node.js
+print_header "Шаг 7: Предварительная загрузка образа Node.js"
+print_info "Загрузка образа node:20-alpine..."
+print_warning "Это может занять несколько минут при первом запуске..."
+
+# Попытка загрузить образ с повторами
+MAX_RETRIES=3
+RETRY_COUNT=0
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    if docker pull node:20-alpine; then
+        print_success "Образ node:20-alpine загружен"
+        break
+    else
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+            print_warning "Попытка $RETRY_COUNT из $MAX_RETRIES не удалась. Повтор через 10 секунд..."
+            sleep 10
+        else
+            print_error "Не удалось загрузить образ после $MAX_RETRIES попыток. Проверьте подключение к интернету."
+        fi
+    fi
+done
+
+# Шаг 8: Запуск приложения
 print_header "Шаг 8: Запуск приложения"
-cd "$INSTALL_DIR"
-docker-compose down 2>/dev/null || true
-docker-compose up -d --build || print_error "Ошибка при запуске приложения"
-print_success "Приложение запущено"
+print_info "Сборка и запуск приложения..."
+print_warning "Первая сборка может занять 5-10 минут..."
 
-# Шаг 9: Проверка статуса
-print_header "Шаг 9: Проверка статуса"
-sleep 5
+if docker-compose up -d --build; then
+    print_success "Приложение запущено"
+else
+    print_error "Ошибка при запуске приложения"
+fi
+
+# Ожидание запуска
+print_info "Ожидание запуска приложения..."
+sleep 10
+
+# Проверка статуса
+print_header "Проверка статуса"
 docker-compose ps
 
-# Проверка здоровья приложения
-if docker-compose ps | grep -q "healthy\|running"; then
-    print_success "Приложение успешно запущено"
-else
-    print_warning "Приложение может быть еще в процессе запуска, проверьте логи:"
-    print_info "docker-compose logs -f app"
-fi
-
-# Шаг 10: Установка Nginx (опционально)
-print_header "Шаг 10: Установка Nginx (опционально)"
-read -p "Установить и настроить Nginx как reverse proxy? (y/n) " -n 1 -r
+# Шаг 9: Опциональная установка Nginx
+print_header "Шаг 9: Установка Nginx (опционально)"
+read -p "Установить Nginx как reverse proxy? (y/n): " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
+    print_info "Установка Nginx..."
     apt-get install -y nginx
     
-    cat > /etc/nginx/sites-available/notes-service << 'EOF'
+    print_info "Настройка Nginx..."
+    cat > /etc/nginx/sites-available/notes-service << 'NGINX_EOF'
 server {
     listen 80;
     server_name _;
@@ -184,40 +225,35 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
 }
-EOF
-    
+NGINX_EOF
+
     ln -sf /etc/nginx/sites-available/notes-service /etc/nginx/sites-enabled/
     rm -f /etc/nginx/sites-enabled/default
     
     nginx -t && systemctl restart nginx
     print_success "Nginx установлен и настроен"
 else
-    print_info "Nginx не установлен, приложение доступно на порту $APP_PORT"
+    print_info "Nginx не установлен"
 fi
 
-# Итоговая информация
-print_header "✓ Развертывание завершено!"
+# Финальное сообщение
+print_header "✓ Установка завершена!"
 echo ""
-print_success "Notes Service готов к использованию"
+print_success "Notes Service успешно развернут!"
 echo ""
-echo "🌐 Откройте приложение в браузере:"
-echo "   http://your-server-ip:$APP_PORT"
+print_info "Приложение доступно по адресу:"
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo -e "${GREEN}  http://$(hostname -I | awk '{print $1}')${NC}"
+else
+    echo -e "${GREEN}  http://$(hostname -I | awk '{print $1}'):3000${NC}"
+fi
 echo ""
-echo "📊 Управление приложением:"
-echo "   Логи: docker-compose -f $INSTALL_DIR/docker-compose.yml logs -f app"
-echo "   Статус: docker-compose -f $INSTALL_DIR/docker-compose.yml ps"
-echo "   Перезагрузка: docker-compose -f $INSTALL_DIR/docker-compose.yml restart"
-echo "   Остановка: docker-compose -f $INSTALL_DIR/docker-compose.yml down"
+print_info "Полезные команды:"
+echo "  Просмотр логов:  docker-compose -f $INSTALL_DIR/docker-compose.yml logs -f app"
+echo "  Статус:          docker-compose -f $INSTALL_DIR/docker-compose.yml ps"
+echo "  Перезагрузка:    docker-compose -f $INSTALL_DIR/docker-compose.yml restart"
+echo "  Остановка:       docker-compose -f $INSTALL_DIR/docker-compose.yml stop"
 echo ""
-echo "💾 Резервная копия БД:"
-echo "   docker-compose -f $INSTALL_DIR/docker-compose.yml exec app cp /app/data/notes.db /app/data/notes.db.backup"
+print_info "Первый зарегистрированный пользователь станет администратором!"
 echo ""
-echo "🔐 Важно:"
-echo "   1. Измените JWT_SECRET в файле .env на новый"
-echo "   2. Установите SSL сертификат (Let's Encrypt)"
-echo "   3. Настройте доменное имя в Nginx конфигурации"
-echo "   4. Первый пользователь будет администратором"
-echo ""
-echo "📚 Полная документация:"
-echo "   $INSTALL_DIR/TIMEWEB_DEPLOYMENT.md"
-echo ""
+print_success "Готово! 🎉"
