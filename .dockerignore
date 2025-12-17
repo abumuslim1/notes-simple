@@ -1,11 +1,7 @@
 node_modules
 npm-debug.log
-dist
 .git
 .gitignore
-README.md
-DEPLOYMENT.md
-BUGFIXES.md
 .env
 .env.local
 .env.*.local
@@ -21,3 +17,11 @@ data/
 .nuxt
 coverage
 .nyc_output
+
+# Документация (не нужна в образе)
+README*.md
+DEPLOYMENT*.md
+BUGFIXES.md
+QUICK_START.md
+INSTALL*.md
+TIMEWEB*.md
