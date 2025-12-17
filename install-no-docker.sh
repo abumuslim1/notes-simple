@@ -183,8 +183,39 @@ print_header "Шаг 10: Запуск сервиса"
 print_info "Запуск сервиса..."
 systemctl start notes-service
 systemctl enable notes-service
-sleep 3
+sleep 5
 print_success "Сервис запущен"
+
+# Шаг 10.5: Создание администратора по умолчанию
+print_header "Шаг 10.5: Создание администратора"
+print_info "Создание администратора по умолчанию..."
+sleep 3  # Ждем инициализации БД
+
+if [ -f "create-admin.js" ]; then
+    node create-admin.js || print_warning "Не удалось создать администратора автоматически"
+else
+    print_warning "Скрипт create-admin.js не найден"
+    print_info "Создание администратора вручную..."
+    
+    # Создание администратора через Node.js
+    node -e "
+const Database = require('better-sqlite3');
+const bcrypt = require('bcryptjs');
+try {
+  const db = new Database('./data/notes.db');
+  const hashedPassword = bcrypt.hashSync('admin123', 10);
+  const userId = \`user_\${Date.now()}_\${Math.random().toString(36).substr(2, 9)}\`;
+  const now = Date.now();
+  db.prepare('INSERT INTO user (id, username, password, role, createdAt) VALUES (?, ?, ?, ?, ?)').run(userId, 'admin', hashedPassword, 'admin', now);
+  console.log('✅ Администратор создан!');
+  db.close();
+} catch (e) {
+  console.log('⚠️  Администратор уже существует или ошибка:', e.message);
+}
+" || print_warning "Не удалось создать администратора"
+fi
+
+print_success "Администратор создан: admin / admin123"
 
 # Проверка статуса
 if systemctl is-active --quiet notes-service; then
@@ -249,6 +280,10 @@ echo "  Перезагрузка:    sudo systemctl restart notes-service"
 echo "  Остановка:       sudo systemctl stop notes-service"
 echo "  Запуск:          sudo systemctl start notes-service"
 echo ""
-print_info "Первый зарегистрированный пользователь станет администратором!"
+print_info "Данные для входа:"
+echo -e "${GREEN}  Логин:  admin${NC}"
+echo -e "${GREEN}  Пароль: admin123${NC}"
+echo ""
+print_warning "Рекомендуется сменить пароль после первого входа!"
 echo ""
 print_success "Готово! 🎉"
