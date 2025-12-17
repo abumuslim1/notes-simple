@@ -256,3 +256,14 @@
 ## Fixes: Task Status SQL Error (Current)
 - [x] Исправить ошибку SQL при вставке в taskStatusHistory (создана таблица в БД)
 - [x] Все 35 тестов проходят
+
+
+## Production Deployment Fixes (Current)
+- [x] Исправить server/_core/sdk.ts - secure: false для HTTP (без SSL)
+- [x] Обновить install-with-mysql.sh с правильной последовательностью команд
+- [x] Добавить drizzle-kit push вместо migrate в скрипт
+- [x] Добавить автоматическое создание администратора в скрипт
+- [x] Добавить pnpm build перед запуском сервиса
+- [x] Создать финальную документацию PRODUCTION_INSTALL.md
+- [ ] Протестировать полную установку с нуля на чистом сервере
+- [ ] Сохранить checkpoint и отправить в GitHub

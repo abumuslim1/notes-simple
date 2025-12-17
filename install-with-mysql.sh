@@ -60,7 +60,7 @@ if command -v mysql &> /dev/null; then
     print_info "MySQL уже установлен"
 else
     print_info "Установка MySQL Server..."
-    apt-get install -y mysql-server
+    DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server
     
     # Запуск MySQL
     systemctl start mysql
@@ -81,6 +81,8 @@ if mysql -e "USE $DB_NAME" 2>/dev/null; then
         EXISTING_URL=$(grep DATABASE_URL "$INSTALL_DIR/.env" 2>/dev/null | cut -d'=' -f2-)
         if [ -n "$EXISTING_URL" ]; then
             print_info "Используем существующие настройки БД"
+            # Извлекаем пароль из URL
+            DB_PASS=$(echo "$EXISTING_URL" | sed -n 's/.*:\/\/[^:]*:\([^@]*\)@.*/\1/p')
         fi
     fi
 else
@@ -141,7 +143,7 @@ if [ -d "$INSTALL_DIR" ]; then
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         # Остановка сервиса если запущен
-        if systemctl is-active --quiet notes-service; then
+        if systemctl is-active --quiet notes-service 2>/dev/null; then
             print_info "Остановка сервиса..."
             systemctl stop notes-service
         fi
@@ -196,11 +198,13 @@ print_info "Запуск миграций..."
 # Экспортируем DATABASE_URL для drizzle-kit
 export DATABASE_URL="mysql://$DB_USER:$DB_PASS@localhost:3306/$DB_NAME"
 
-# Запускаем миграции
-pnpm db:push || {
-    print_warning "Ошибка при запуске миграций, пробуем альтернативный способ..."
+# Используем drizzle-kit push для создания таблиц напрямую
+print_info "Создание таблиц через drizzle-kit push..."
+npx drizzle-kit push --force || {
+    print_warning "Ошибка при создании таблиц"
+    print_info "Пробуем альтернативный способ..."
     npx drizzle-kit generate
-    npx drizzle-kit migrate
+    npx drizzle-kit push --force
 }
 
 print_success "Таблицы созданы"
@@ -210,48 +214,57 @@ print_header "Шаг 11: Создание администратора"
 print_info "Создание пользователя admin..."
 
 # Создаем хеш пароля через Node.js и вставляем в БД
-node -e "
+node << 'ADMIN_SCRIPT' || print_warning "Не удалось создать администратора автоматически"
 const bcrypt = require('bcryptjs');
 const mysql = require('mysql2/promise');
 
 async function createAdmin() {
-  const connection = await mysql.createConnection('mysql://$DB_USER:$DB_PASS@localhost:3306/$DB_NAME');
-  
-  // Проверяем существует ли admin
-  const [rows] = await connection.execute('SELECT id FROM users WHERE username = ?', ['admin']);
-  
-  if (rows.length > 0) {
-    console.log('⚠️  Пользователь admin уже существует');
+  try {
+    require('dotenv').config();
+    const connection = await mysql.createConnection(process.env.DATABASE_URL);
+    
+    // Проверяем существует ли admin
+    const [rows] = await connection.execute('SELECT id FROM users WHERE username = ?', ['admin']);
+    
+    if (rows.length > 0) {
+      console.log('⚠️  Пользователь admin уже существует');
+      await connection.end();
+      return;
+    }
+    
+    // Создаем хеш пароля
+    const passwordHash = bcrypt.hashSync('admin123', 10);
+    
+    // Вставляем пользователя
+    await connection.execute(
+      'INSERT INTO users (username, passwordHash, name, role) VALUES (?, ?, ?, ?)',
+      ['admin', passwordHash, 'Administrator', 'admin']
+    );
+    
+    console.log('✅ Администратор создан!');
     await connection.end();
-    return;
+  } catch (error) {
+    console.log('⚠️  Ошибка при создании администратора:', error.message);
+    process.exit(0);
   }
-  
-  // Создаем хеш пароля
-  const passwordHash = bcrypt.hashSync('admin123', 10);
-  
-  // Вставляем пользователя
-  await connection.execute(
-    'INSERT INTO users (username, passwordHash, name, role) VALUES (?, ?, ?, ?)',
-    ['admin', passwordHash, 'Administrator', 'admin']
-  );
-  
-  console.log('✅ Администратор создан!');
-  await connection.end();
 }
 
-createAdmin().catch(e => {
-  console.log('⚠️  Ошибка при создании администратора:', e.message);
-  process.exit(0);
-});
-" || print_warning "Не удалось создать администратора автоматически"
+createAdmin();
+ADMIN_SCRIPT
 
 print_success "Администратор: admin / admin123"
 
 # Шаг 12: Сборка приложения
 print_header "Шаг 12: Сборка приложения"
 print_info "Сборка приложения (это может занять несколько минут)..."
-pnpm build
+pnpm build || print_error "Ошибка при сборке приложения"
 print_success "Приложение собрано"
+
+# Проверяем что dist/index.js создан
+if [ ! -f "dist/index.js" ]; then
+    print_error "Файл dist/index.js не найден после сборки"
+fi
+print_info "Файл dist/index.js создан"
 
 # Шаг 13: Создание systemd сервиса
 print_header "Шаг 13: Создание systemd сервиса"
@@ -264,9 +277,9 @@ After=network.target mysql.service
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/opt/notes-service
+WorkingDirectory=$INSTALL_DIR
 Environment=NODE_ENV=production
-ExecStart=/usr/bin/node /opt/notes-service/dist/index.js
+ExecStart=/usr/bin/node $INSTALL_DIR/dist/index.js
 Restart=always
 RestartSec=10
 
@@ -305,6 +318,8 @@ server {
     listen 80;
     server_name _;
 
+    client_max_body_size 50M;
+
     location / {
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
@@ -315,6 +330,11 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
+        
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
     }
 }
 NGINX_EOF
@@ -346,7 +366,7 @@ print_info "Данные для входа:"
 echo -e "${GREEN}  Логин:  admin${NC}"
 echo -e "${GREEN}  Пароль: admin123${NC}"
 echo ""
-print_warning "Рекомендуется сменить пароль после первого входа!"
+print_warning "⚠️  ВАЖНО: Рекомендуется сменить пароль после первого входа!"
 echo ""
 print_info "Полезные команды:"
 echo "  Просмотр логов:  sudo journalctl -u notes-service -f"
@@ -355,9 +375,14 @@ echo "  Перезагрузка:    sudo systemctl restart notes-service"
 echo "  Остановка:       sudo systemctl stop notes-service"
 echo ""
 print_info "Настройки базы данных:"
-echo "  Хост:     localhost"
-echo "  База:     $DB_NAME"
-echo "  Пользователь: $DB_USER"
-echo "  Пароль:   $DB_PASS"
+echo "  Хост:            localhost"
+echo "  База:            $DB_NAME"
+echo "  Пользователь:    $DB_USER"
+echo "  Пароль:          $DB_PASS"
+echo ""
+print_info "Примечания:"
+echo "  - Приложение работает на HTTP (без SSL)"
+echo "  - Для production рекомендуется настроить HTTPS с Let's Encrypt"
+echo "  - Максимальный размер загружаемого файла: 50MB"
 echo ""
 print_success "Готово! 🎉"

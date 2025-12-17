@@ -93,13 +93,13 @@ class SDKServer {
 
   /**
    * Create auth token and set cookie
-   * Note: secure flag is set to false for development (HTTP)
-   * In production, this should be true for HTTPS
+   * Note: secure flag is set to false for HTTP (without SSL)
+   * Set to true only when using HTTPS with valid SSL certificate
    */
   setAuthCookie(res: any, token: string) {
     res.cookie(COOKIE_NAME, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false, // Set to true only if using HTTPS/SSL
       sameSite: "lax",
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       path: "/",
@@ -113,7 +113,7 @@ class SDKServer {
   clearAuthCookie(res: any) {
     res.clearCookie(COOKIE_NAME, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false, // Must match setAuthCookie
       sameSite: "lax",
       path: "/",
     });
